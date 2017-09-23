@@ -1,0 +1,2 @@
+To activate this logfile:
+change it's permissions to 777 and uncomment line 93 in upsxml.php
