@@ -1,4 +1,4 @@
-UPS XML Rates v1.5.1 for Zen Cart (for Zen Cart versions 1.5.x)
+UPS XML Rates v1.7 for Zen Cart (for Zen Cart versions 1.5.x)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -159,12 +159,9 @@ sure your origin information is correct, and use the proper two-letter codes
 for your country and state/province.
 
 If you STILL don't get any quotes, you can enable logging which will record the
-request/response of the transactions and any cURL errors. Look for, uncomment, 
-and change (e.g. to a full path) the line in upsxml.php (line 92):
-
-To enable logging, change the "upsxml.log" file to give it write permissions 
-(755 or 777) and uncomment in upsxml.php (near line 92):
-$this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
+request/response of the transactions and any cURL errors. Starting with v1.7,
+just update the shipping method's debug via your admin's Modules->Shipping, editing
+the upsxml module.
 
 
 ===============================================================================
@@ -188,3 +185,15 @@ $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
 
 1.6.1 simply changed mysql_ function to mysqli_ for zen cart 1.5.5 and future PHP compatibility
 
+-------------
+1.7 Changelog (lat9)
+-------------
+
+- Updated /includes/classes/xmldocument.php for PHP 7.0+ interoperability.
+- Added a "Shipper Number" field to the configuration.  This value is needed if your store
+    wants to receive your UPS-negotiated rates.
+- Added configuration settings, allowing you to control whether or not the weight and/or
+    transit-time displays should be included.
+- Added a configuration setting to allow you to control whether or not the plugin's debug
+    output is to be activated.
+- Updated the plugin's "title", displaying the current version only during admin configuration.
