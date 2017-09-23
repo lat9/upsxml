@@ -30,7 +30,7 @@ class XMLDocument {
     var $root;
     var $children;
 
-    function XMLDocument() {
+    function __construct() {
     }
 
     function createElement($name) {
@@ -83,7 +83,7 @@ class Node {
     var $children;
     var $attributes;
 
-    function Node() {
+    function __construct() {
         $this->children = array();
         $this->attributes = array();
     }
@@ -222,7 +222,7 @@ class XMLParser {
     var $current;
     var $error;
 
-    function XMLParser() {
+    function __construct() {
         $this->document = new XMLDocument();
         $this->error = array();
     }
