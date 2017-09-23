@@ -45,7 +45,10 @@ class upsxml {
     function __construct() {
         global $db, $order;
         $this->code = 'upsxml';
-        $this->title = MODULE_SHIPPING_UPSXML_RATES_TEXT_TITLE . ' v' . $this->moduleVersion;
+        $this->title = MODULE_SHIPPING_UPSXML_RATES_TEXT_TITLE;
+        if (IS_ADMIN_FLAG === true) {
+            $this->title .= ' v' . $this->moduleVersion;
+        }
         $this->description = MODULE_SHIPPING_UPSXML_RATES_TEXT_DESCRIPTION;
 
         if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS')) {
