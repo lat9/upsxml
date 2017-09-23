@@ -1,4 +1,4 @@
-UPS XML Rates v1.7 for Zen Cart (for Zen Cart versions 1.5.x)
+UPS XML Rates v1.7 for Zen Cart (for Zen Cart versions 1.5.1 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -181,7 +181,7 @@ the upsxml module.
 - changed suggested logfile location to /logs/ folder
 - removed the need to duplicate the xmldocument.php into the admin folder
 - added Customer Classification Code 00 to get account rates (requires that you actually have negotiated rates)
-- Compatible with Zen Cart v1.5.0, 1.5.1, 1.5.2, 1.5.3, 1.5.4, 1.5.5
+- Compatible with Zen Cart 1.5.1, 1.5.2, 1.5.3, 1.5.4, 1.5.5
 
 1.6.1 simply changed mysql_ function to mysqli_ for zen cart 1.5.5 and future PHP compatibility
 
