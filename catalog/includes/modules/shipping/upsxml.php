@@ -76,6 +76,7 @@ class upsxml {
         $this->unit_length = MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH;
         $this->handling_fee = MODULE_SHIPPING_UPSXML_RATES_HANDLING;
         $this->quote_type = MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE;
+        $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
         $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
         $this->protocol = 'https';
         $this->host = ((MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
@@ -313,6 +314,7 @@ class upsxml {
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', '6', '1', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', '6', '2', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', '6', '3', now())");
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', '6', '3', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', '6', '4', 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', '6', '5', 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', '6', '6', now())");
@@ -367,6 +369,7 @@ class upsxml {
                      'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY',
                      'MODULE_SHIPPING_UPSXML_RATES_USERNAME',
                      'MODULE_SHIPPING_UPSXML_RATES_PASSWORD',
+                     'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER',
                      'MODULE_SHIPPING_UPSXML_RATES_MODE',
                      );
     }
@@ -568,6 +571,7 @@ class upsxml {
         "       <Code>". $this->pickup_methods[$this->pickup_method] ."</Code>\n".
         "   </PickupType>\n".
         "   <Shipment>\n".
+        (($this->upsShipperNumber == '') ? '' : ('<RateInformation><NegotiatedRatesIndicator /></RateInformation>' . PHP_EOL)) .
         "       <Shipper>\n".
         "           <Address>\n".
         "               <City>". $this->_upsOriginCity ."</City>\n".
@@ -575,6 +579,7 @@ class upsxml {
         "               <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
         "               <PostalCode>". $this->_upsOriginPostalCode ."</PostalCode>\n".
         "           </Address>\n".
+        (($this->upsShipperNumber == '') ? '' : ('<ShipperNumber>' . $this->upsShipperNumber . '</ShipperNumber>' . PHP_EOL)) .
         "       </Shipper>\n".
         "       <ShipTo>\n".
         "           <Address>\n".
@@ -719,7 +724,11 @@ class upsxml {
         $aryProducts = false;
         for ($i = 0; $i < count($ratedShipments); $i++) {
             $serviceCode = $ratedShipments[$i]->getValueByPath("/Service/Code");
-            $totalCharge = $ratedShipments[$i]->getValueByPath("/TotalCharges/MonetaryValue");
+            if ($this->upsShipperNumber != '') {
+                $totalCharge = $ratedShipments[$i]->getValueByPath('/NegotiatedRates/NetSummaryCharges/GrandTotal/MonetaryValue');
+            } else {
+                $totalCharge = $ratedShipments[$i]->getValueByPath("/TotalCharges/MonetaryValue");
+            }
             if (!($serviceCode && $totalCharge)) {
                 continue;
             }
