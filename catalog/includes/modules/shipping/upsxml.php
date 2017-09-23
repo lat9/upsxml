@@ -77,6 +77,8 @@ class upsxml {
         $this->handling_fee = MODULE_SHIPPING_UPSXML_RATES_HANDLING;
         $this->quote_type = MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE;
         $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
+        $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
+        $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
         $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
         $this->protocol = 'https';
         $this->host = ((MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
@@ -100,9 +102,9 @@ class upsxml {
             $this->pkgvalue = ceil($order->info['subtotal']);
         }
         // end insurance addition
-
-        // to enable logging, create an empty "upsxml.log" file at the location you set below, give it write permissions (755 or 777) and uncomment the next line
-        // $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
+        if (MODULE_SHIPPING_UPSXML_DEBUG == 'true') {
+            $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
+        }
 
         if (($this->enabled == true) && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
             $check_flag = false;
@@ -234,23 +236,34 @@ class upsxml {
                 $this->_addItem (0, 0, 0, $shipping_weight);
             }
         }
-
-        // BOF Time In Transit: 
-        // comment out this section if you don't want/need to have expected delivery dates
-        $this->servicesTimeintransit = $this->_upsGetTimeServices();
-        if ($this->logfile) {
-            error_log("------------------------------------------\n", 3, $this->logfile);
-            error_log("Time in Transit: " . $this->timeintransit . "\n", 3, $this->logfile);
+        if ($this->displayTransitTime) {
+            // BOF Time In Transit: 
+            // comment out this section if you don't want/need to have expected delivery dates
+            $this->servicesTimeintransit = $this->_upsGetTimeServices();
+            if ($this->logfile) {
+                error_log("------------------------------------------\n", 3, $this->logfile);
+                error_log("Time in Transit: " . $this->timeintransit . "\n", 3, $this->logfile);
+                error_log("Shipping weight: $shipping_weight" . PHP_EOL, 3, $this->logfile);
+                error_log("Shipping Num Boxes: $shipping_num_boxes" . PHP_EOL, 3, $this->logfile);
+                error_log('this: ' . var_export($this, true) . PHP_EOL, 3, $this->logfile);
+            }
+            // EOF Time In Transit
         }
-        // EOF Time In Transit
 
         $upsQuote = $this->_upsGetQuote();
         if ((is_array($upsQuote)) && (sizeof($upsQuote) > 0)) {
-            if (DIMENSIONS_SUPPORTED) {
-                $this->quotes = array('id' => $this->code, 'module' => $this->title . ' (' . $this->boxCount . ($this->boxCount > 1 ? ' pkg(s), ' : ' pkg, ') . $totalWeight . ' ' . strtolower($this->unit_weight) . ' total)');
-            } else {
-                $this->quotes = array('id' => $this->code, 'module' => $this->title . ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight,2) . ' ' . strtolower($this->unit_weight) . ' total)');
+            $weight_info = '';
+            if ($this->displayWeight) {
+                if (DIMENSIONS_SUPPORTED) {
+                    $weight_info = ' (' . $this->boxCount . ($this->boxCount > 1 ? ' pkg(s), ' : ' pkg, ') . $totalWeight . ' ' . strtolower($this->unit_weight) . ' total)';
+                } else {
+                    $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight,2) . ' ' . strtolower($this->unit_weight) . ' total)';
+                }
             }
+            $this->quotes = array(
+                'id' => $this->code,
+                'module' => $this->title . $weight_info
+            );
             $methods = array();
             foreach ($upsQuote as $quote) {
                 foreach ($quote as $type => $cost) {
@@ -259,20 +272,22 @@ class upsxml {
                     // EOF limit choices
                     if ( $method == '' || $method == $type ) {
                         $_type = $type;
-                        //if (isset($this->servicesTimeintransit[$type])) {
-                        //    $_type = $_type . ", ".$this->servicesTimeintransit[$type]["date"];
-                        //}
-                        // instead of just adding the expected delivery date as ", yyyy-mm-dd"
-                        // you might like to change this to your own liking for example by commenting the
-                        // three lines above this and uncommenting/changing the next:
-                        // START doing things differently
-                        if (isset($this->servicesTimeintransit[$type])) {
-                            $eta_array = explode("-", $this->servicesTimeintransit[$type]["date"]);
-                            $months = array (" ", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
-                            $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
-                            $_type .= ", ETA: ".$eta_arrival_date;
+                        if ($this->displayTransitTime) {
+                            //if (isset($this->servicesTimeintransit[$type])) {
+                            //    $_type = $_type . ", ".$this->servicesTimeintransit[$type]["date"];
+                            //}
+                            // instead of just adding the expected delivery date as ", yyyy-mm-dd"
+                            // you might like to change this to your own liking for example by commenting the
+                            // three lines above this and uncommenting/changing the next:
+                            // START doing things differently
+                            if (isset($this->servicesTimeintransit[$type])) {
+                                $eta_array = explode("-", $this->servicesTimeintransit[$type]["date"]);
+                                $months = array (" ", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
+                                $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
+                                $_type .= ", ETA: ".$eta_arrival_date;
+                            }
+                            // END of doing things differently:
                         }
-                        // END of doing things differently:
 
                         $methods[] = array('id' => $type, 'title' => $_type, 'cost' => ($this->handling_fee + $cost));
                     }
@@ -315,6 +330,8 @@ class upsxml {
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', '6', '2', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', '6', '3', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', '6', '3', now())");
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', '6', '16', 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now())");
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', '6', '16', 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', '6', '4', 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', '6', '5', 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', '6', '6', now())");
@@ -370,6 +387,8 @@ class upsxml {
                      'MODULE_SHIPPING_UPSXML_RATES_USERNAME',
                      'MODULE_SHIPPING_UPSXML_RATES_PASSWORD',
                      'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER',
+                     'MODULE_SHIPPING_UPSXML_OPTIONS',
+                     'MODULE_SHIPPING_UPSXML_DEBUG',
                      'MODULE_SHIPPING_UPSXML_RATES_MODE',
                      );
     }
