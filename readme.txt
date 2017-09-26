@@ -197,3 +197,11 @@ the upsxml module.
 - Added a configuration setting to allow you to control whether or not the plugin's debug
     output is to be activated.
 - Updated the plugin's "title", displaying the current version only during admin configuration.
+
+-------------
+1.7.1 Changelog (lat9)
+-------------
+
+- An invalid "Currency Code" resulted in invalid results returned when negotiated rates were enabled.
+  - Updated /includes/classes/xmldocument.php, /includes/languages/english/modules/shipping/upsxml.php,
+    and /includes/modules/shipping/upsxml.php.

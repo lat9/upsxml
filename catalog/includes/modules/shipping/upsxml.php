@@ -39,7 +39,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 
 class upsxml {
     var $code, $title, $description, $icon, $enabled, $types, $boxcount;
-    public $moduleVersion = '1.7';
+    public $moduleVersion = '1.7.1';
 
     //***************
     function __construct() {
@@ -79,6 +79,13 @@ class upsxml {
         $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
         $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
         $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
+        
+        // -----
+        // Ensure that the currency code supplied is supported by the store, default to
+        // the store's default currency (with a warning log generated) if not.
+        //
+        $this->currencyCode = $this->initCurrencyCode();
+        
         $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
         $this->protocol = 'https';
         $this->host = ((MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
@@ -209,6 +216,28 @@ class upsxml {
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54
             )
         );
+    }
+    
+    // ----
+    // Make sure that the currency-code specified is within the range of those currently enabled for the
+    // store, defaulting to the store's default currency (with a log generated) if not.
+    //
+    private function initCurrencyCode()
+    {
+        if (!class_exists('currencies')) {
+            require DIR_WS_CLASSES . 'currencies.php';
+        }
+        $currencies = new currencies();
+        $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
+        if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
+            trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
+            $currency_code = DEFAULT_CURRENCY;
+            
+            if (IS_ADMIN_FLAG === true) {
+                $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
+            }
+        }
+        return $currency_code;
     }
 
     // class methods
@@ -646,7 +675,7 @@ class upsxml {
             //"                   </CODAmount>\n".
             //"               </COD>\n".
             "               <InsuredValue>\n".
-            "                   <CurrencyCode>".MODULE_SHIPPING_UPSXML_CURRENCY_CODE."</CurrencyCode>\n".
+            "                   <CurrencyCode>" . $this->currencyCode . "</CurrencyCode>\n".
             "                   <MonetaryValue>".$this->pkgvalue."</MonetaryValue>\n".
             "               </InsuredValue>\n".
             "           </PackageServiceOptions>\n".
@@ -743,9 +772,11 @@ class upsxml {
         $aryProducts = false;
         for ($i = 0; $i < count($ratedShipments); $i++) {
             $serviceCode = $ratedShipments[$i]->getValueByPath("/Service/Code");
+            $totalCharge = false;
             if ($this->upsShipperNumber != '') {
-                $totalCharge = $ratedShipments[$i]->getValueByPath('/NegotiatedRates/NetSummaryCharges/GrandTotal/MonetaryValue');
-            } else {
+                $totalCharge = $ratedShipments[$i]->getValueByPath("/NegotiatedRates/NetSummaryCharges/GrandTotal/MonetaryValue");
+            }
+            if ($totalCharge === false) {
                 $totalCharge = $ratedShipments[$i]->getValueByPath("/TotalCharges/MonetaryValue");
             }
             if (!($serviceCode && $totalCharge)) {

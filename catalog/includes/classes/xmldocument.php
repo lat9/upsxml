@@ -70,7 +70,13 @@ class XMLDocument {
             array_shift($pathArray);
             $newPath = implode("/", $pathArray);
             return $this->root->getValueByPath($newPath);
+            
+//-bof-20170925-lat9-Return boolean false if the root path was not found.
+        } else {
+            return false;
         }
+//-eof-20170925-lat9
+
     }
 }
 
@@ -142,7 +148,11 @@ class Node {
     function getValueByPath($path) {
         $pathArray = explode('/', $path);
         $node = $this;
-        for ($i = 0; $i < count($pathArray); $i++) {
+        for ($i = 0, $matches = 0, $num_segments = count($pathArray); $i < $num_segments; $i++) {
+            if ($i == 0 && $pathArray[$i] == '') {
+                $matches++;
+                continue;
+            }
             //print_r("Looking for " . $pathArray[$i] ."<br>");
             if ($node->getChildren()) {
                 for ($j = 0; $j < count($node->getChildren()); $j++) {
@@ -150,12 +160,13 @@ class Node {
                         if ($node->children[$j]->getName() == $pathArray[$i]) {
                             //print_r("Found " . $pathArray[$i] ."<br>");
                             $node = $node->children[$j];
+                            $matches++;
                         }
                     }
                 }
             }
         }
-        return $node->getValue();
+        return ($matches == $num_segments) ? $node->getValue() : false;
     } 
 
     function getText() {
