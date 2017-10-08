@@ -1,4 +1,4 @@
-UPS XML Rates v1.7 for Zen Cart (for Zen Cart versions 1.5.1 and later)
+UPS XML Rates v1.7.1 for Zen Cart (for Zen Cart versions 1.5.1 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
