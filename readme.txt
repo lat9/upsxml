@@ -1,4 +1,4 @@
-UPS XML Rates v1.7.1 for Zen Cart (for Zen Cart versions 1.5.1 and later)
+UPS XML Rates v1.7.2 for Zen Cart (for Zen Cart versions 1.5.1 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -205,3 +205,10 @@ the upsxml module.
 - An invalid "Currency Code" resulted in invalid results returned when negotiated rates were enabled.
   - Updated /includes/classes/xmldocument.php, /includes/languages/english/modules/shipping/upsxml.php,
     and /includes/modules/shipping/upsxml.php.
+    
+-------------
+1.7.2 Changelog (lat9)
+-------------
+
+- Don't issue the invalid "Currency Code" message until the module is installed and enabled.
+  - Updated /includes/modules/shipping/upsxml.php

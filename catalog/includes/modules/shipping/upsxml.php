@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7
+ * UPS XML v1.7.2
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -39,7 +39,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 
 class upsxml {
     var $code, $title, $description, $icon, $enabled, $types, $boxcount;
-    public $moduleVersion = '1.7.1';
+    public $moduleVersion = '1.7.2';
 
     //***************
     function __construct() {
@@ -224,17 +224,19 @@ class upsxml {
     //
     private function initCurrencyCode()
     {
-        if (!class_exists('currencies')) {
-            require DIR_WS_CLASSES . 'currencies.php';
-        }
-        $currencies = new currencies();
-        $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
-        if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
-            trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
-            $currency_code = DEFAULT_CURRENCY;
-            
-            if (IS_ADMIN_FLAG === true) {
-                $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
+        $currency_code = DEFAULT_CURRENCY;
+        if (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True') {
+            if (!class_exists('currencies')) {
+                require DIR_WS_CLASSES . 'currencies.php';
+            }
+            $currencies = new currencies();
+            $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
+            if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
+                trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
+                
+                if (IS_ADMIN_FLAG === true) {
+                    $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
+                }
             }
         }
         return $currency_code;
