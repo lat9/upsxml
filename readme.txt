@@ -211,4 +211,5 @@ the upsxml module.
 -------------
 
 - Don't issue the invalid "Currency Code" message until the module is installed and enabled.
+- Don't request negotiated rates if the ship-to state has not been set (i.e. when used by the shipping-estimator).
   - Updated /includes/modules/shipping/upsxml.php
