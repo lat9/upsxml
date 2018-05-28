@@ -245,6 +245,10 @@ class upsxml {
     // class methods
     function quote($method = '') {
         global $order, $shipping_weight, $shipping_num_boxes, $total_weight, $boxcount;
+        if (($order->delivery['zone_id'] == '') ||
+            ($order->delivery['postcode'] == '')) {
+          return null;
+        }
         $state = zen_get_zone_code($order->delivery['country']['id'], $order->delivery['zone_id'], '');
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
         $this->_upsDest($order->delivery['city'], $state, $order->delivery['country']['iso_code_2'], $order->delivery['postcode']);
