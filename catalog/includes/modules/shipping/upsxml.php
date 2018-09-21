@@ -13,9 +13,9 @@
 | Insurance support by Joe McFrederick                                         |
 +------------------------------------------------------------------------------+
 | Modifyed for zen-cart 1.2.5d by Dennis Sayer - July 9, 2005                  |
-| Indention corrections by Dennis Sayer - July 9, 2005                         | 
-| Tested for zen-cart 1.3 by Dennis Sayer - July 03 2006                       | 
-| dennis.s.sayer@brandnamebatteries.com                                        |    
+| Indention corrections by Dennis Sayer - July 9, 2005                         |
+| Tested for zen-cart 1.3 by Dennis Sayer - July 03 2006                       |
+| dennis.s.sayer@brandnamebatteries.com                                        |
 +------------------------------------------------------------------------------+
 | Released under the GNU General Public License                                |
 | This program is free software; you can redistribute it and/or modify it      |
@@ -79,16 +79,16 @@ class upsxml {
         $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
         $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
         $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
-        
+
         // -----
         // Ensure that the currency code supplied is supported by the store, default to
         // the store's default currency (with a warning log generated) if not.
         //
         $this->currencyCode = $this->initCurrencyCode();
-        
+
         $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
         $this->protocol = 'https';
-        $this->host = ((MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
+        $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
         $this->port = '443';
         $this->path = '/ups.app/xml/Rate';
         $this->transitpath = '/ups.app/xml/TimeInTransit';
@@ -190,7 +190,6 @@ class upsxml {
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_08,
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_11,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_54,
-                '64' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_64,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_65
             ),
             // Puerto Rico Origin
@@ -217,7 +216,7 @@ class upsxml {
             )
         );
     }
-    
+
     // ----
     // Make sure that the currency-code specified is within the range of those currently enabled for the
     // store, defaulting to the store's default currency (with a log generated) if not.
@@ -233,7 +232,7 @@ class upsxml {
             $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
             if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
                 trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
-                
+
                 if (IS_ADMIN_FLAG === true) {
                     $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
                 }
@@ -268,7 +267,7 @@ class upsxml {
             }
         }
         if ($this->displayTransitTime) {
-            // BOF Time In Transit: 
+            // BOF Time In Transit:
             // comment out this section if you don't want/need to have expected delivery dates
             $this->servicesTimeintransit = $this->_upsGetTimeServices();
             if ($this->logfile) {
