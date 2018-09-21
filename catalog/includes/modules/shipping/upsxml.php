@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.2
+ * UPS XML v1.7.3
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -39,7 +39,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 
 class upsxml {
     var $code, $title, $description, $icon, $enabled, $types, $boxcount;
-    public $moduleVersion = '1.7.2';
+    public $moduleVersion = '1.7.3-beta1';
 
     //***************
     function __construct() {

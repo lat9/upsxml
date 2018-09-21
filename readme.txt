@@ -1,4 +1,4 @@
-UPS XML Rates v1.7.2 for Zen Cart (for Zen Cart versions 1.5.1 and later)
+UPS XML Rates v1.7.3 for Zen Cart (for Zen Cart versions 1.5.1 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -212,4 +212,11 @@ the upsxml module.
 
 - Don't issue the invalid "Currency Code" message until the module is installed and enabled.
 - Don't request negotiated rates if the ship-to state has not been set (i.e. when used by the shipping-estimator).
+  - Updated /includes/modules/shipping/upsxml.php
+    
+-------------
+1.7.3 Changelog (lat9, benharold)
+-------------
+
+- Correct undefined constants' issues (required for PHP 7.2+)
   - Updated /includes/modules/shipping/upsxml.php
