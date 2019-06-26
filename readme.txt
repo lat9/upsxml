@@ -1,4 +1,4 @@
-UPS XML Rates v1.7.3 for Zen Cart (for Zen Cart versions 1.5.1 and later)
+UPS XML Rates v1.7.3 for Zen Cart (for Zen Cart versions 1.5.3 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -221,6 +221,7 @@ the upsxml module.
 - Correct undefined constants' issues (required for PHP 7.2+)
 - Updated the shipping method's debug log filename to include the date on which the log was made.
 - Don't return methods if an error is reported by UPS.
+- Remove support for Zen Carts prior to 1.5.3.
   - Updated 
     1. /includes/classes/xmldocument.php
     2. /includes/languages/english/modules/shipping/upsxml.php
