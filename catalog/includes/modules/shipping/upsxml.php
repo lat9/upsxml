@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.3
+ * UPS XML v1.7.4
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -32,17 +32,19 @@
 | Boston, MA 02111-1307 USA                                                    |
 +------------------------------------------------------------------------------+
 */
-require (DIR_FS_CATALOG . 'includes/classes/xmldocument.php');
+require DIR_FS_CATALOG . 'includes/classes/xmldocument.php';
 
 // if using the optional dimensional support, set to 1, otherwise leave as 0
 define('DIMENSIONS_SUPPORTED', 0);
 
-class upsxml {
-    var $code, $title, $description, $icon, $enabled, $types, $boxcount;
+class upsxml 
+{
+    public $code, $title, $description, $icon, $enabled, $types, $boxcount;
     public $moduleVersion = '1.7.3-beta1';
 
     //***************
-    function __construct() {
+    function __construct() 
+    {
         global $db, $order;
         $this->code = 'upsxml';
         $this->title = MODULE_SHIPPING_UPSXML_RATES_TEXT_TITLE;
@@ -57,65 +59,71 @@ class upsxml {
                 $this->title .= '<span class="alert">' . ' - NOTE: A NEW VERSION OF THIS PLUGIN IS AVAILABLE. <a href="' . $new_version_details['link'] . '" target="_blank">[Details]</a>' . '</span>';
             }
         }
+        
+        $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True');
+        
+        if ($this->enabled) {
+            $this->sort_order = (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER;
+            $this->icon = DIR_WS_TEMPLATE . '/images/icons/shipping_ups.gif';
+            $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
 
-        $this->sort_order = MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER;
-        $this->icon = DIR_WS_TEMPLATE . '/' . 'images/icons'. '/' . 'shipping_ups.gif';
-        $this->tax_class = MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
-        $this->enabled = ((MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True') ? true : false);
-        $this->access_key = MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY;
-        $this->access_username = MODULE_SHIPPING_UPSXML_RATES_USERNAME;
-        $this->access_password = MODULE_SHIPPING_UPSXML_RATES_PASSWORD;
-        $this->origin = MODULE_SHIPPING_UPSXML_RATES_ORIGIN;
-        $this->origin_city = MODULE_SHIPPING_UPSXML_RATES_CITY;
-        $this->origin_stateprov = MODULE_SHIPPING_UPSXML_RATES_STATEPROV;
-        $this->origin_country = MODULE_SHIPPING_UPSXML_RATES_COUNTRY;
-        $this->origin_postalcode = MODULE_SHIPPING_UPSXML_RATES_POSTALCODE;
-        $this->pickup_method = MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD;
-        $this->package_type = MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE;
-        $this->unit_weight = MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT;
-        $this->unit_length = MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH;
-        $this->handling_fee = MODULE_SHIPPING_UPSXML_RATES_HANDLING;
-        $this->quote_type = MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE;
-        $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
-        $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
-        $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
+            $this->access_key = MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY;
+            $this->access_username = MODULE_SHIPPING_UPSXML_RATES_USERNAME;
+            $this->access_password = MODULE_SHIPPING_UPSXML_RATES_PASSWORD;
+            $this->origin = MODULE_SHIPPING_UPSXML_RATES_ORIGIN;
+            $this->origin_city = MODULE_SHIPPING_UPSXML_RATES_CITY;
+            $this->origin_stateprov = MODULE_SHIPPING_UPSXML_RATES_STATEPROV;
+            $this->origin_country = MODULE_SHIPPING_UPSXML_RATES_COUNTRY;
+            $this->origin_postalcode = MODULE_SHIPPING_UPSXML_RATES_POSTALCODE;
+            $this->pickup_method = MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD;
+            $this->package_type = MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE;
+            $this->unit_weight = MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT;
+            $this->unit_length = MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH;
+            $this->handling_fee = MODULE_SHIPPING_UPSXML_RATES_HANDLING;
+            $this->quote_type = MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE;
+            $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
+            $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
+            $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
 
-        // -----
-        // Ensure that the currency code supplied is supported by the store, default to
-        // the store's default currency (with a warning log generated) if not.
-        //
-        $this->currencyCode = $this->initCurrencyCode();
+            // -----
+            // Ensure that the currency code supplied is supported by the store, default to
+            // the store's default currency (with a warning log generated) if not.
+            //
+            $this->currencyCode = $this->initCurrencyCode();
 
-        $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
-        $this->protocol = 'https';
-        $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
-        $this->port = '443';
-        $this->path = '/ups.app/xml/Rate';
-        $this->transitpath = '/ups.app/xml/TimeInTransit';
-        $this->version = 'UPSXML Rate 1.0001';
-        $this->transitversion = 'UPSXML Time In Transit 1.0002';
-        $this->timeout = '60';
-        $this->xpci_version = '1.0001';
-        $this->transitxpci_version = '1.0002';
-        $this->items_qty = 0;
-        $this->timeintransit = '0';
-        $this->today = date("Ymd");
+            $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
+            $this->protocol = 'https';
+            $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
+            $this->port = '443';
+            $this->path = '/ups.app/xml/Rate';
+            $this->transitpath = '/ups.app/xml/TimeInTransit';
+            $this->version = 'UPSXML Rate 1.0001';
+            $this->transitversion = 'UPSXML Time In Transit 1.0002';
+            $this->timeout = '60';
+            $this->xpci_version = '1.0001';
+            $this->transitxpci_version = '1.0002';
+            $this->items_qty = 0;
+            $this->timeintransit = '0';
+            $this->today = date('Ymd');
 
-        // insurance addition
-        if (MODULE_SHIPPING_UPSXML_INSURE == 'False'){
-            $this->pkgvalue = 100;
+            // insurance addition
+            $this->pkgvalue = (MODULE_SHIPPING_UPSXML_INSURE == 'False' || !isset($order)) ? 100 : ceil($order->info['subtotal']);
+
+            // end insurance addition
+            if (MODULE_SHIPPING_UPSXML_DEBUG == 'true') {
+                $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
+            }
         }
-        if (MODULE_SHIPPING_UPSXML_INSURE == 'True'){
-            $this->pkgvalue = ceil($order->info['subtotal']);
-        }
-        // end insurance addition
-        if (MODULE_SHIPPING_UPSXML_DEBUG == 'true') {
-            $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
-        }
 
-        if (($this->enabled == true) && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
+        if ($this->enabled && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
             $check_flag = false;
-            $check = $db->Execute("select zone_id from " . TABLE_ZONES_TO_GEO_ZONES . " where geo_zone_id = '" . (int)MODULE_SHIPPING_UPSXML_RATES_ZONE . "' and zone_country_id = '" . (int)$order->delivery['country']['id'] . "' order by zone_id");
+            $check = $db->Execute(
+                "SELECT zone_id 
+                   FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
+                  WHERE geo_zone_id = " . (int)MODULE_SHIPPING_UPSXML_RATES_ZONE . "
+                    AND zone_country_id = " . (int)$order->delivery['country']['id'] . "
+                  ORDER BY zone_id"
+            );
             while (!$check->EOF) {
                 if ($check->fields['zone_id'] < 1) {
                     $check_flag = true;
@@ -124,7 +132,7 @@ class upsxml {
                     $check_flag = true;
                     break;
                 }
-            $check->MoveNext();
+                $check->MoveNext();
             }
 
             if ($check_flag == false) {
@@ -224,25 +232,24 @@ class upsxml {
     private function initCurrencyCode()
     {
         $currency_code = DEFAULT_CURRENCY;
-        if (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True') {
-            if (!class_exists('currencies')) {
-                require DIR_WS_CLASSES . 'currencies.php';
-            }
-            $currencies = new currencies();
-            $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
-            if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
-                trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
+        if (!class_exists('currencies')) {
+            require DIR_WS_CLASSES . 'currencies.php';
+        }
+        $currencies = new currencies();
+        $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
+        if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
+            trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
 
-                if (IS_ADMIN_FLAG === true) {
-                    $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
-                }
+            if (IS_ADMIN_FLAG === true) {
+                $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
             }
         }
         return $currency_code;
     }
 
     // class methods
-    function quote($method = '') {
+    public function quote($method = '') 
+    {
         global $order, $shipping_weight, $shipping_num_boxes, $total_weight, $boxcount;
         $state = zen_get_zone_code($order->delivery['country']['id'], $order->delivery['zone_id'], '');
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
@@ -263,7 +270,7 @@ class upsxml {
             // The old method. Let zen-cart tell us how many boxes, plus the weight of each (or total? - might be sw/num boxes)
             $this->items_qty = 0; //reset quantities
             for ($i = 0; $i < $shipping_num_boxes; $i++) {
-                $this->_addItem (0, 0, 0, $shipping_weight);
+                $this->_addItem(0, 0, 0, $shipping_weight);
             }
         }
         if ($this->displayTransitTime) {
@@ -281,13 +288,13 @@ class upsxml {
         }
 
         $upsQuote = $this->_upsGetQuote();
-        if ((is_array($upsQuote)) && (sizeof($upsQuote) > 0)) {
+        if (is_array($upsQuote) && count($upsQuote) > 0) {
             $weight_info = '';
             if ($this->displayWeight) {
                 if (DIMENSIONS_SUPPORTED) {
                     $weight_info = ' (' . $this->boxCount . ($this->boxCount > 1 ? ' pkg(s), ' : ' pkg, ') . $totalWeight . ' ' . strtolower($this->unit_weight) . ' total)';
                 } else {
-                    $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight,2) . ' ' . strtolower($this->unit_weight) . ' total)';
+                    $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight, 2) . ' ' . strtolower($this->unit_weight) . ' total)';
                 }
             }
             $this->quotes = array(
@@ -298,9 +305,11 @@ class upsxml {
             foreach ($upsQuote as $quote) {
                 foreach ($quote as $type => $cost) {
                     // BOF limit choices
-                    if (!exclude_choices($type)) continue;
+                    if (!exclude_choices($type)) {
+                        continue;
+                    }
                     // EOF limit choices
-                    if ( $method == '' || $method == $type ) {
+                    if ($method == '' || $method == $type) {
                         $_type = $type;
                         if ($this->displayTransitTime) {
                             //if (isset($this->servicesTimeintransit[$type])) {
@@ -311,8 +320,8 @@ class upsxml {
                             // three lines above this and uncommenting/changing the next:
                             // START doing things differently
                             if (isset($this->servicesTimeintransit[$type])) {
-                                $eta_array = explode("-", $this->servicesTimeintransit[$type]["date"]);
-                                $months = array (" ", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
+                                $eta_array = explode('-', $this->servicesTimeintransit[$type]["date"]);
+                                $months = array (' ', "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
                                 $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
                                 $_type .= ", ETA: ".$eta_arrival_date;
                             }
@@ -328,7 +337,7 @@ class upsxml {
             }
             $this->quotes['methods'] = $methods;
         } else {
-            if ( $upsQuote != false ) {
+            if (!$upsQuote) {
                 $errmsg = $upsQuote;
             } else {
                 $errmsg = MODULE_SHIPPING_UPSXML_RATES_TEXT_UNKNOWN_ERROR;
@@ -336,24 +345,30 @@ class upsxml {
             $errmsg .= '<br>' . MODULE_SHIPPING_UPSXML_RATES_TEXT_IF_YOU_PREFER . ' ' . STORE_NAME.' via <a href="mailto:'.STORE_OWNER_EMAIL_ADDRESS.'"><u>Email</U></a>.';
             $this->quotes = array('module' => $this->title, 'error' => $errmsg);
         }
-        if (zen_not_null($this->icon)) {
+        if (!empty($this->icon)) {
             $this->quotes['icon'] = zen_image($this->icon, $this->title);
         }
         return $this->quotes;
     }
 
     //**************
-    function check() {
-        global $db;
+    public function check() 
+    {
         if (!isset($this->_check)) {
-            $check_query = $db->Execute("select configuration_value from " . TABLE_CONFIGURATION . " where configuration_key = 'MODULE_SHIPPING_UPSXML_RATES_STATUS'");
+            $check_query = $GLOBALS['db']->Execute(
+                "SELECT configuration_value 
+                   FROM " . TABLE_CONFIGURATION . " 
+                  WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_RATES_STATUS'
+                  LIMIT 1"
+            );
             $this->_check = $check_query->RecordCount();
         }
         return $this->_check;
     }
 
     //**************
-    function install() {
+    public function install() 
+    {
         global $db;
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', '6', '0', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', '6', '1', now())");
@@ -387,81 +402,83 @@ class upsxml {
     }
 
     //****************
-    function remove() {
-      global $db;
-      $db->Execute("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
+    function remove() 
+    {
+        $GLOBALS['db']->Execute(
+            "DELETE FROM " . TABLE_CONFIGURATION . " 
+              WHERE configuration_key IN ('" . implode("', '", $this->keys()) . "')"
+        );
     }
     //*************
-    function keys() {
-        return array('MODULE_SHIPPING_UPSXML_RATES_STATUS',
-                     'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS',
-                     'MODULE_SHIPPING_UPSXML_RATES_ZONE',
-                     'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER',
-                     'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD',
-                     'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE',
-                     'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE',
-                     'MODULE_SHIPPING_UPSXML_RATES_ORIGIN',
-                     'MODULE_SHIPPING_UPSXML_RATES_CITY',
-                     'MODULE_SHIPPING_UPSXML_RATES_STATEPROV',
-                     'MODULE_SHIPPING_UPSXML_RATES_COUNTRY',
-                     'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE',
-                     'MODULE_SHIPPING_UPSXML_CURRENCY_CODE',
-                     'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT',
-                     'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH',
-                     'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE',
-                     'MODULE_SHIPPING_UPSXML_RATES_HANDLING',
-                     'MODULE_SHIPPING_UPSXML_INSURE',
-                     'MODULE_SHIPPING_UPSXML_TYPES',
-                     'SHIPPING_DAYS_DELAY',
-                     'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY',
-                     'MODULE_SHIPPING_UPSXML_RATES_USERNAME',
-                     'MODULE_SHIPPING_UPSXML_RATES_PASSWORD',
-                     'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER',
-                     'MODULE_SHIPPING_UPSXML_OPTIONS',
-                     'MODULE_SHIPPING_UPSXML_DEBUG',
-                     'MODULE_SHIPPING_UPSXML_RATES_MODE',
-                     );
+    function keys() 
+    {
+        return array(
+            'MODULE_SHIPPING_UPSXML_RATES_STATUS',
+            'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS',
+            'MODULE_SHIPPING_UPSXML_RATES_ZONE',
+            'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER',
+            'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD',
+            'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE',
+            'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE',
+            'MODULE_SHIPPING_UPSXML_RATES_ORIGIN',
+            'MODULE_SHIPPING_UPSXML_RATES_CITY',
+            'MODULE_SHIPPING_UPSXML_RATES_STATEPROV',
+            'MODULE_SHIPPING_UPSXML_RATES_COUNTRY',
+            'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE',
+            'MODULE_SHIPPING_UPSXML_CURRENCY_CODE',
+            'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT',
+            'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH',
+            'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE',
+            'MODULE_SHIPPING_UPSXML_RATES_HANDLING',
+            'MODULE_SHIPPING_UPSXML_INSURE',
+            'MODULE_SHIPPING_UPSXML_TYPES',
+            'SHIPPING_DAYS_DELAY',
+            'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY',
+            'MODULE_SHIPPING_UPSXML_RATES_USERNAME',
+            'MODULE_SHIPPING_UPSXML_RATES_PASSWORD',
+            'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER',
+            'MODULE_SHIPPING_UPSXML_OPTIONS',
+            'MODULE_SHIPPING_UPSXML_DEBUG',
+            'MODULE_SHIPPING_UPSXML_RATES_MODE',
+        );
     }
 
     //***********************
-    function _upsProduct($prod){
+    protected function _upsProduct($prod)
+    {
         $this->_upsProductCode = $prod;
     }
 
     //**********************************************
-    function _upsOrigin($city, $stateprov, $country, $postal){
+    protected function _upsOrigin($city, $stateprov, $country, $postal)
+    {
         $this->_upsOriginCity = $city;
         $this->_upsOriginStateProv = $stateprov;
         $this->_upsOriginCountryCode = $country;
         $postal = str_replace(' ', '', $postal);
-        if ($country == 'US') {
-            $this->_upsOriginPostalCode = substr($postal, 0, 5);
-        } else {
-            $this->_upsOriginPostalCode = $postal;
-        }
+        $this->_upsOriginPostalCode = ($country == 'US') ? substr($postal, 0, 5) : $postal;
     }
 
     //**********************************************
-    function _upsDest($city, $stateprov, $country, $postal) {
+    protected function _upsDest($city, $stateprov, $country, $postal) 
+    {
         $this->_upsDestCity = $city;
         $this->_upsDestStateProv = $stateprov;
         $this->_upsDestCountryCode = $country;
         $postal = str_replace(' ', '', $postal);
-        if ($country == 'US') {
-            $this->_upsDestPostalCode = substr($postal, 0, 5);
-        } else {
-            $this->_upsDestPostalCode = $postal;
-        }
+        $this->_upsDestPostalCode = ($country == 'US') ? substr($postal, 0, 5) : $postal;
     }
 
     //************************
-    function _upsAction($action) {
+    protected function _upsAction($action) 
+    {
         // rate - Single Quote; shop - All Available Quotes
         $this->_upsActionCode = $action;
     }
 
     //********************************************
-    function _addItem($length, $width, $height, $weight) {
+    protected function _addItem($length, $width, $height, $weight) 
+    {
         // Add box or item to shipment list. Round weights to 1 decimal places.
         if ((float)$weight < 1.0) {
             $weight = 1;
@@ -477,7 +494,8 @@ class upsxml {
     }
 
     //********************
-    function getPackages() {
+    protected function getPackages() 
+    {
         global $db;
         $packages = array();
         $result = $db->Execute("select * from " . TABLE_PACKAGING . " order by package_cost;");
@@ -498,7 +516,8 @@ class upsxml {
     }
 
     //********************************
-    function packProducts($productsArray) {
+    protected function packProducts($productsArray) 
+    {
         // A very simple box packing algorithm. Given a list of packages, returns an array of boxes.
         // This algorithm is trivial. It works on the premise that you have selected boxes that fit your products, and that their volumes are resonable multiples
         // of the products they store. For example, if you sell CDs and these CDs are 5x5x0.5", your boxes should be 5x5x0.5 (1 CD mailer), 5x5x2.5 (5 CD mailer)
@@ -575,7 +594,8 @@ class upsxml {
     }
 
     //*****************************
-    function fitsInBox($product, $box) {
+    protected function fitsInBox($product, $box) 
+    {
         $productVolume = $product['length'] * $product['width'] * $product['height'];
         if ($productVolume <= $box['remaining_volume']) {
             if ($box['max_weight'] == 0 || ($box['current_weight'] + $product['weight'] <= $box['max_weight'])) {
@@ -586,7 +606,8 @@ class upsxml {
     }
 
     //***********************************
-    function putProductInBox($product, $box) {
+    protected function putProductInBox($product, $box) 
+    {
         $productVolume = $product['length'] * $product['width'] * $product['height'];
         $box['remaining_volume'] -= $productVolume;
         $box['products'][] = $product;
@@ -595,7 +616,8 @@ class upsxml {
     }
 
     //*********************
-    function _upsGetQuote() {
+    protected function _upsGetQuote() 
+    {
         // Create the access request
         $accessRequestHeader =
         "<?xml version=\"1.0\"?>\n".
@@ -702,8 +724,9 @@ class upsxml {
     }
 
     //******************************************************************
-    function _post($protocol, $host, $port, $path, $version, $timeout, $xmlRequest) {
-        $url = $protocol."://".$host.":".$port.$path;
+    protected function _post($protocol, $host, $port, $path, $version, $timeout, $xmlRequest) 
+    {
+        $url = $protocol . "://" .$host . ":" . $port . $path;
         if ($this->logfile) {
             error_log("------------------------------------------\n", 3, $this->logfile);
             error_log("DATE AND TIME: ".date('Y-m-d H:i:s')."\n", 3, $this->logfile);
@@ -747,7 +770,8 @@ class upsxml {
     }
 
     //*****************************
-    function _parseResult($xmlResult) {
+    protected function _parseResult($xmlResult) 
+    {
         // Parse XML message returned by the UPS post server.
         $doc = new XMLDocument();
         $xp = new XMLParser();
@@ -814,7 +838,8 @@ class upsxml {
     // GM 11-15-2004: renamed from _upsGetTime()
 
     //********************
-    function _upsGetTimeServices() {
+    protected function _upsGetTimeServices() 
+    {
         if (defined('SHIPPING_DAYS_DELAY')) {
              $shipdate = date("Ymd", time()+(86400*SHIPPING_DAYS_DELAY));
         } else {
@@ -882,7 +907,8 @@ class upsxml {
     // GM 11-15-2004: modified to return array with time for each service, as
     //                opposed to single transit time for hardcoded "GND" code
 
-    function _transitparseResult($xmlTransitResult) {
+    protected function _transitparseResult($xmlTransitResult) 
+    {
        $transitTime = array();
        // Parse XML message returned by the UPS post server.
        $doc = new XMLDocument();
@@ -934,7 +960,8 @@ class upsxml {
 }
 
 //***************************
-function exclude_choices($type) {
+function exclude_choices($type) 
+{
     // used for exclusion of UPS shipping options, read from db
     $allowed_types = explode(",", MODULE_SHIPPING_UPSXML_TYPES);
     if (strstr($type, "UPS")) {
