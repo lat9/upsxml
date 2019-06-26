@@ -8,4 +8,4 @@ Questions, comments or bug reports?  Please use the plugin's Zen Cart support th
 
 ## Zen Cart Download Link
 
-The report's download link from the Zen Cart Plugins is  https://www.zen-cart.com/downloads.php?do=file&id=126.
+The shipping module's download link from the Zen Cart Plugins is  https://www.zen-cart.com/downloads.php?do=file&id=126.
