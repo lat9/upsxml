@@ -219,4 +219,9 @@ the upsxml module.
 -------------
 
 - Correct undefined constants' issues (required for PHP 7.2+)
-  - Updated /includes/modules/shipping/upsxml.php
+- Updated the shipping method's debug log filename to include the date on which the log was made.
+- Don't return methods if an error is reported by UPS.
+  - Updated 
+    1. /includes/classes/xmldocument.php
+    2. /includes/languages/english/modules/shipping/upsxml.php
+    3. /includes/modules/shipping/upsxml.php

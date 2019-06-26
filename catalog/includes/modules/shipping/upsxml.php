@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.4
+ * UPS XML v1.7.3
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -39,7 +39,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 
 class upsxml 
 {
-    public $code, $title, $description, $icon, $enabled, $types, $boxcount;
+    public $code, $title, $description, $icon, $enabled, $types;
     public $moduleVersion = '1.7.3-beta1';
 
     //***************
@@ -61,9 +61,8 @@ class upsxml
         }
         
         $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True');
-        
+        $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : false;
         if ($this->enabled) {
-            $this->sort_order = (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER;
             $this->icon = DIR_WS_TEMPLATE . '/images/icons/shipping_ups.gif';
             $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
 
@@ -108,15 +107,13 @@ class upsxml
 
             // insurance addition
             $this->pkgvalue = (MODULE_SHIPPING_UPSXML_INSURE == 'False' || !isset($order)) ? 100 : ceil($order->info['subtotal']);
-
             // end insurance addition
-            if (MODULE_SHIPPING_UPSXML_DEBUG == 'true') {
-                $this->logfile = DIR_FS_CATALOG . 'logs/upsxml.log';
-            }
+            
+            $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG == 'true');
+            $this->logfile = DIR_FS_LOGS . '/upsxml-' . date('Ymd') . '.log';
         }
 
         if ($this->enabled && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
-            $check_flag = false;
             $check = $db->Execute(
                 "SELECT zone_id 
                    FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
@@ -124,18 +121,16 @@ class upsxml
                     AND zone_country_id = " . (int)$order->delivery['country']['id'] . "
                   ORDER BY zone_id"
             );
+            $check_flag = false;
             while (!$check->EOF) {
-                if ($check->fields['zone_id'] < 1) {
-                    $check_flag = true;
-                    break;
-                } elseif ($check->fields['zone_id'] == $order->delivery['zone_id']) {
+                if ($check->fields['zone_id'] < 1 || $check->fields['zone_id'] == $order->delivery['zone_id']) {
                     $check_flag = true;
                     break;
                 }
                 $check->MoveNext();
             }
 
-            if ($check_flag == false) {
+            if (!$check_flag) {
                 $this->enabled = false;
             }
         }
@@ -162,9 +157,14 @@ class upsxml
             'UPS 10kg Box' => '25'
         );
 
+        // -----
         // Human-readable Service Code lookup table. The values returned by the Rates and Service "shop" method are numeric.
         // Using these codes, and the administratively defined Origin, the proper human-readable service name is returned.
-        // Note: The origin specified in the admin configuration affects only the product name as displayed to the user.
+        //
+        // Notes: 
+        // 1) The origin specified in the admin configuration affects only the product name as displayed to the user.
+        // 2) These code-to-name correlations were last verified with the "UPS Rating Package XML Developer Guide" dated 2019-01-07.
+        //
         $this->service_codes = array(
             // US Origin
             'US Origin' => array(
@@ -184,13 +184,15 @@ class upsxml
             // Canada Origin
             'Canada Origin' => array(
                 '01' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_01,
+                '02' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_02,
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_08,
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_11,
                 '12' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_12,
                 '13' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_13,
                 '14' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_14,
-                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_54
+                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_54,
+                '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_65
             ),
             // European Union Origin
             'European Union Origin' => array(
@@ -208,19 +210,24 @@ class upsxml
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_08,
                 '14' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_14,
-                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_54
+                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_54,
+                '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_65
             ),
             // Mexico Origin
             'Mexico Origin' => array(
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_08,
-                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_54
+                '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_11,
+                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_54,
+                '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_65
             ),
             // All other origins
             'All other origins' => array(
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_08,
-                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54
+                '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_11,
+                '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54,
+                '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_65
             )
         );
     }
@@ -238,10 +245,11 @@ class upsxml
         $currencies = new currencies();
         $currency_code = MODULE_SHIPPING_UPSXML_CURRENCY_CODE;
         if (!isset($currencies->currencies[MODULE_SHIPPING_UPSXML_CURRENCY_CODE])) {
-            trigger_error(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, E_USER_WARNING);
+            $error_message = sprintf(MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, MODULE_SHIPPING_UPSXML_CURRENCY_CODE);
+            trigger_error($error_message, E_USER_WARNING);
 
             if (IS_ADMIN_FLAG === true) {
-                $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE, 'error');
+                $GLOBALS['messageStack']->add_session('<b>upsxml</b>: ' . $error_message, 'error');
             }
         }
         return $currency_code;
@@ -250,10 +258,17 @@ class upsxml
     // class methods
     public function quote($method = '') 
     {
-        global $order, $shipping_weight, $shipping_num_boxes, $total_weight, $boxcount;
+        global $order, $shipping_weight, $shipping_num_boxes, $total_weight;
         $state = zen_get_zone_code($order->delivery['country']['id'], $order->delivery['zone_id'], '');
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
-        $this->_upsDest($order->delivery['city'], $state, $order->delivery['country']['iso_code_2'], $order->delivery['postcode']);
+        
+        // -----
+        // When rates are requested from the shipping-estimator, the city isn't set and the postcode might not be.  Provide
+        // defaults for the request.
+        //
+        $dest_city = (!empty($order->delivery['city'])) ? $order->delivery['city'] : '';
+        $dest_postcode = (!empty($order->delivery['postcode'])) ? $order->delivery['postcode'] : '';
+        $this->_upsDest($dest_city, $state, $order->delivery['country']['iso_code_2'], $dest_postcode);
 
         if (DIMENSIONS_SUPPORTED) {
             $productsArray = $_SESSION['cart']->get_products();
@@ -277,13 +292,13 @@ class upsxml
             // BOF Time In Transit:
             // comment out this section if you don't want/need to have expected delivery dates
             $this->servicesTimeintransit = $this->_upsGetTimeServices();
-            if ($this->logfile) {
-                error_log("------------------------------------------\n", 3, $this->logfile);
-                error_log("Time in Transit: " . $this->timeintransit . "\n", 3, $this->logfile);
-                error_log("Shipping weight: $shipping_weight" . PHP_EOL, 3, $this->logfile);
-                error_log("Shipping Num Boxes: $shipping_num_boxes" . PHP_EOL, 3, $this->logfile);
-                error_log('this: ' . var_export($this, true) . PHP_EOL, 3, $this->logfile);
-            }
+            $this->debugLog(
+                "Time in Transit: {$this->timeintransit}" . PHP_EOL .
+                "Shipping weight: $shipping_weight" . PHP_EOL .
+                "Shipping Num Boxes: $shipping_num_boxes" . PHP_EOL .
+                "this: " . var_export($this, true),
+                true
+            );
             // EOF Time In Transit
         }
 
@@ -305,7 +320,7 @@ class upsxml
             foreach ($upsQuote as $quote) {
                 foreach ($quote as $type => $cost) {
                     // BOF limit choices
-                    if (!exclude_choices($type)) {
+                    if (!$this->excludeChoices($type)) {
                         continue;
                     }
                     // EOF limit choices
@@ -369,36 +384,64 @@ class upsxml
     //**************
     public function install() 
     {
-        global $db;
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', '6', '0', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', '6', '1', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', '6', '2', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', '6', '3', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', '6', '3', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', '6', '16', 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', '6', '16', 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', '6', '4', 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', '6', '5', 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', '6', '6', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Shipping Origin', 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN', 'US Origin', 'What origin point should be used (this setting affects only what UPS product names are shown to the user)', '6', '7', 'zen_cfg_select_option(array(\'US Origin\', \'Canada Origin\', \'European Union Origin\', \'Puerto Rico Origin\', \'Mexico Origin\', \'All other origins\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Origin City', 'MODULE_SHIPPING_UPSXML_RATES_CITY', '', 'Enter the name of the origin city.', '6', '8', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Origin State/Province', 'MODULE_SHIPPING_UPSXML_RATES_STATEPROV', '', 'Enter the two-letter code for your origin state/province.', '6', '9', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Origin Country', 'MODULE_SHIPPING_UPSXML_RATES_COUNTRY', '', 'Enter the two-letter code for your origin country.', '6', '10', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Origin Zip/Postal Code', 'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE', '', 'Enter your origin zip/postalcode.', '6', '11', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Test or Production Mode', 'MODULE_SHIPPING_UPSXML_RATES_MODE', 'Test', 'Use this module in Test or Production mode?', '6', '12', 'zen_cfg_select_option(array(\'Test\', \'Production\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Unit Weight', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT', 'LBS', 'By what unit are your packages weighed?', '6', '13', 'zen_cfg_select_option(array(\'LBS\', \'KGS\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Unit Length', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH', 'IN', 'By what unit are your packages sized?', '6', '14', 'zen_cfg_select_option(array(\'IN\', \'CM\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Quote Type', 'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE', 'Commercial', 'Quote for Residential or Commercial Delivery', '6', '15', 'zen_cfg_select_option(array(\'Commercial\', \'Residential\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Handling Fee', 'MODULE_SHIPPING_UPSXML_RATES_HANDLING', '0', 'Handling fee for this shipping method.', '6', '16', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('UPS Currency Code', 'MODULE_SHIPPING_UPSXML_CURRENCY_CODE', '" . DEFAULT_CURRENCY . "', 'Enter the 3 letter currency code for your country of origin. United States (USD)', '6', '2', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Insurance', 'MODULE_SHIPPING_UPSXML_INSURE', 'True', 'Do you want to insure packages shipped by UPS?', '6', '0', 'zen_cfg_select_option(array(\'True\', \'False\'), ', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('Tax Class', 'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS', '0', 'Use the following tax class on the shipping fee.', '6', '17', 'zen_get_tax_class_title', 'zen_cfg_pull_down_tax_classes(', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('Shipping Zone', 'MODULE_SHIPPING_UPSXML_RATES_ZONE', '0', 'If a zone is selected, only enable this shipping method for that zone.', '6', '18', 'zen_get_zone_class_title', 'zen_cfg_pull_down_zone_classes(', now())");
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '19', now())");
-        // add key for allowed shipping methods
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', '6', '20', 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early A.M.\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ',  now())");
-        // add key for shipping delay
-        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, last_modified, date_added, use_function, set_function) values ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', '7', '6', NULL, now(), NULL, NULL)");
+        $GLOBALS['db']->Execute(
+            "INSERT INTO " . TABLE_CONFIGURATION . "
+                (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added)
+             VALUES
+                ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', '6', '0', NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
+                
+                ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', '6', '1', NULL, NULL, now()),
+                
+                ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', '6', '2', NULL, NULL, now()),
+                
+                ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', '6', '3', NULL, NULL, now()),
+                
+                ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', '6', '3', NULL, NULL, now()),
+                
+                ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', '6', '16', NULL, 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now()),
+                
+                ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', '6', '16', NULL, 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now()),
+                
+                ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', '6', '4', NULL, 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now()),
+                
+                ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', '6', '5', NULL, 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now()),
+                
+                ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', '6', '6', NULL, NULL, now()),
+                
+                ('Shipping Origin', 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN', 'US Origin', 'What origin point should be used (this setting affects only what UPS product names are shown to the user)', '6', '7', NULL, 'zen_cfg_select_option(array(\'US Origin\', \'Canada Origin\', \'European Union Origin\', \'Puerto Rico Origin\', \'Mexico Origin\', \'All other origins\'), ', now()),
+                
+                ('Origin City', 'MODULE_SHIPPING_UPSXML_RATES_CITY', '', 'Enter the name of the origin city.', '6', '8', NULL, NULL, now()),
+                
+                ('Origin State/Province', 'MODULE_SHIPPING_UPSXML_RATES_STATEPROV', '', 'Enter the two-letter code for your origin state/province.', '6', '9', NULL, NULL, now()),
+                
+                ('Origin Country', 'MODULE_SHIPPING_UPSXML_RATES_COUNTRY', '', 'Enter the two-letter code for your origin country.', '6', '10', NULL, NULL, now()),
+                
+                ('Origin Zip/Postal Code', 'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE', '', 'Enter your origin zip/postalcode.', '6', '11', NULL, NULL, now()),
+                
+                ('Test or Production Mode', 'MODULE_SHIPPING_UPSXML_RATES_MODE', 'Test', 'Use this module in Test or Production mode?', '6', '12', NULL, 'zen_cfg_select_option(array(\'Test\', \'Production\'), ', now()),
+                
+                ('Unit Weight', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT', 'LBS', 'By what unit are your packages weighed?', '6', '13', NULL, 'zen_cfg_select_option(array(\'LBS\', \'KGS\'), ', now()),
+                
+                ('Unit Length', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH', 'IN', 'By what unit are your packages sized?', '6', '14', NULL, 'zen_cfg_select_option(array(\'IN\', \'CM\'), ', now()),
+                
+                ('Quote Type', 'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE', 'Commercial', 'Quote for Residential or Commercial Delivery', '6', '15', NULL, 'zen_cfg_select_option(array(\'Commercial\', \'Residential\'), ', now()),
+                
+                ('Handling Fee', 'MODULE_SHIPPING_UPSXML_RATES_HANDLING', '0', 'Handling fee for this shipping method.', '6', '16', NULL, NULL, now()),
+                
+                ('UPS Currency Code', 'MODULE_SHIPPING_UPSXML_CURRENCY_CODE', '" . DEFAULT_CURRENCY . "', 'Enter the 3 letter currency code for your country of origin. United States (USD)', '6', '2', NULL, NULL, now()),
+                
+                ('Enable Insurance', 'MODULE_SHIPPING_UPSXML_INSURE', 'True', 'Do you want to insure packages shipped by UPS?', '6', '0', NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
+                
+                ('Tax Class', 'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS', '0', 'Use the following tax class on the shipping fee.', '6', '17', 'zen_get_tax_class_title', 'zen_cfg_pull_down_tax_classes(', now()),
+                
+                ('Shipping Zone', 'MODULE_SHIPPING_UPSXML_RATES_ZONE', '0', 'If a zone is selected, only enable this shipping method for that zone.', '6', '18', 'zen_get_zone_class_title', 'zen_cfg_pull_down_zone_classes(', now()),
+                
+                ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '19', NULL, NULL, now()),
+                
+                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', '6', '20', NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early A.M.\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
+                
+                ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', '6', '7', NULL, NULL, now())"
+        );
     }
 
     //****************
@@ -661,7 +704,7 @@ class upsxml
         ($this->quote_type == "Residential" ? "<ResidentialAddressIndicator/>\n" : "") .
         "           </Address>\n".
         "       </ShipTo>\n";
-        for ($i = 0; $i < $this->items_qty; $i++) {
+        for ($i = 0, $ratingServiceSelectionRequestPackageContent = ''; $i < $this->items_qty; $i++) {
 
             $ratingServiceSelectionRequestPackageContent .=
             "       <Package>\n".
@@ -726,12 +769,8 @@ class upsxml
     //******************************************************************
     protected function _post($protocol, $host, $port, $path, $version, $timeout, $xmlRequest) 
     {
-        $url = $protocol . "://" .$host . ":" . $port . $path;
-        if ($this->logfile) {
-            error_log("------------------------------------------\n", 3, $this->logfile);
-            error_log("DATE AND TIME: ".date('Y-m-d H:i:s')."\n", 3, $this->logfile);
-            error_log("UPS URL: " . $url . "\n", 3, $this->logfile);
-        }
+        $url = $protocol . "://" . $host . ":" . $port . $path;
+        $this->debugLog("Date and Time: " . date('Y-m-d H:i:s') . PHP_EOL . "UPS URL: $url", true);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -740,20 +779,17 @@ class upsxml
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlRequest);
         curl_setopt($ch, CURLOPT_TIMEOUT, (int)$timeout);
-        if ($this->logfile) {
-            error_log("UPS REQUEST: " . $xmlRequest . "\n", 3, $this->logfile);
-        }
-        $xmlResponse = curl_exec ($ch);
-        if (curl_errno($ch) && $this->logfile) {
+        $this->debugLog("UPS Request: $xmlRequest");
+
+        $xmlResponse = curl_exec($ch);
+        if (curl_errno($ch)) {
             $error_from_curl = sprintf('Error [%d]: %s', curl_errno($ch), curl_error($ch));
-            error_log("Error from cURL: " . $error_from_curl . "\n", 3, $this->logfile);
+            $this->debugLog("Error from cURL: $error_from_curl");
         }
-        if ($this->logfile) {
-            error_log("UPS RESPONSE: " . $xmlResponse . "\n", 3, $this->logfile);
-        }
+        $this->debugLog("UPS RESPONSE: $xmlResponse");
         curl_close ($ch);
 
-        if(!$xmlResponse)  {
+        if (!$xmlResponse)  {
             $xmlResponse = "<?xml version=\"1.0\"?>\n".
             "<RatingServiceSelectionResponse>\n".
             "   <Response>\n".
@@ -811,23 +847,11 @@ class upsxml
             $this->boxCount = count($ratedPackages);
             $gdaysToDelivery = $ratedShipments[$i]->getValueByPath("/GuaranteedDaysToDelivery");
             $scheduledTime = $ratedShipments[$i]->getValueByPath("/ScheduledDeliveryTime");
-            $title = '';
             $title = $this->service_codes[$this->origin][$serviceCode];
 
-            /* we don't want to use this, it may conflict with time estimation
-            if ($gdaysToDelivery) {
-                $title .= ' (';
-                $title .= $gdaysToDelivery . " Business Days";
-                if ($scheduledTime) {
-                    $title .= ' @ ' . $scheduledTime;
-                }
-                $title .= ')';
-            } elseif ($this->timeintransit > 0) {
-                $title .= ' (';
-                $title .= $this->timeintransit . " Business Days";
-                $title .= ')';
+            if ($aryProducts === false) {
+                $aryProducts = array();
             }
-            */
             $aryProducts[$i] = array($title => $totalCharge);
         }
         return $aryProducts;
@@ -938,59 +962,59 @@ class upsxml
                $transitResponse = $root->getElementsByName("TransitResponse");
                $serviceSummary = $transitResponse['0']->getElementsByName("ServiceSummary");
                $this->numberServices = count($serviceSummary);
-               for ($s = 0; $s < $this->numberServices ; $s++) {
-                   // index by Desc because that's all we can relate back to the service with
-                   // (though it can probably return the code as well..)
-                   $serviceDesc = $serviceSummary[$s]->getValueByPath("Service/Description");
+               for ($s = 0; $s < $this->numberServices; $s++) {
+                    // index by Desc because that's all we can relate back to the service with
+                    // (though it can probably return the code as well..)
+                    $serviceDesc = $serviceSummary[$s]->getValueByPath("Service/Description");
                     $transitTime[$serviceDesc]["days"] = $serviceSummary[$s]->getValueByPath("EstimatedArrival/BusinessTransitDays");
                     $transitTime[$serviceDesc]["date"] = $serviceSummary[$s]->getValueByPath("EstimatedArrival/Date");
                     $transitTime[$serviceDesc]["guaranteed"] = $serviceSummary[$s]->getValueByPath("Guaranteed/Code");
                 }
             }
         }
-        if ($this->logfile) {
-            error_log("------------------------------------------\n", 3, $this->logfile);
-            foreach($transitTime as $desc => $time) {
-                error_log("Business Transit: " . $desc ." = ". $time["date"] . "\n", 3, $this->logfile);
-            }
+        
+        $include_spacer = true;
+        foreach ($transitTime as $desc => $time) {
+            $this->debugLog("Business Transit: $desc = " . $time["date"], $include_spacer);
+            $include_spacer = false;
         }
+
         return $transitTime;
     }
     //EOF Time In Transit
-}
-
-//***************************
-function exclude_choices($type) 
-{
-    // used for exclusion of UPS shipping options, read from db
-    $allowed_types = explode(",", MODULE_SHIPPING_UPSXML_TYPES);
-    if (strstr($type, "UPS")) {
-        // this will chop off "UPS" from the beginning of the line - typically something like UPS Next Day Air (1 Business Days)
-        $type_minus_ups = explode("UPS", $type );
-            if (strstr($type, "(")) {
-            // this will chop off (x Business Days)
-            $type_minus_bd = explode("(", $type_minus_ups[1] );
-            // get rid of white space with trim
-            $type_root = trim($type_minus_bd[0]);
-        } else { // end if (strstr($type, "("))
-            // if service description contains UPS but not (x Business days):
-            $type_root = trim($type_minus_ups[1]);
-        } // end if (strstr($type, "UPS"):
-    } elseif (strstr($type, "(")) {
-        // if service description doesn't contain UPS, but does (x Business Days):
-        $type_minus_ups_bd = explode("(", $type );
-        $type_root = trim($type_minus_ups_bd[0]);
-    } else { // service description neither contain UPS nor (x Business Days)
-        $type_root = trim($type);
+    
+    // -----
+    // This method checks to see if the UPS shipping 'type' is one that the store has configured.
+    //
+    // The 'type' value is submitted as '[UPS]type-value[(stuff)]' and we're looking for just the
+    // 'type-value' portion, so we'll remove any 'UPS' present in the value and then truncate
+    // the string at any open-parentheses found prior to checking.
+    //
+    protected function excludeChoices($type) 
+    {
+        $type = str_replace('UPS', '', $type);
+        if (($pos = strpos($type, '(')) !== false) {
+            $type = substr($type, 0, $pos + 1);
+        }
+        $type = trim($type);
+        $allowed_types = explode(',', MODULE_SHIPPING_UPSXML_TYPES);
+        foreach ($allowed_types as $current_type) {
+            if ($type == trim($current_type)) {
+                return true;
+            }
+        }
+        return false;
     }
-    for ($za = 0; $za < count ($allowed_types); $za++ ) {
-        if ($type_root == trim($allowed_types[$za])) {
-            return true;
-            exit;
-        } // end if ($type_root == $allowed_types[$za] ...
+    
+    protected function debugLog($message, $include_spacer = false)
+    {
+        if ($this->debug) {
+            if ($include_spacer) {
+                $message = "------------------------------------------\n" . $message;
+            }
+            error_log($message . PHP_EOL, 3, $this->logfile);
+        }
     }
-    // if the type is not allowed:
-    return false;
 }
 
 //******************************
