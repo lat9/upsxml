@@ -226,3 +226,11 @@ the upsxml module.
     1. /includes/classes/xmldocument.php
     2. /includes/languages/english/modules/shipping/upsxml.php
     3. /includes/modules/shipping/upsxml.php
+    
+-------------
+1.7.4 Changelog (lat9)
+-------------
+
+- Remove unwanted directory-separator from UPS icon
+  - Updated /includes/modules/shipping/upsxml.php
+

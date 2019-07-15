@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.3
+ * UPS XML v1.7.4
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.3';
+    public $moduleVersion = '1.7.4-beta1';
 
     //***************
     function __construct() 
@@ -63,7 +63,7 @@ class upsxml
         $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True');
         $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : false;
         if ($this->enabled) {
-            $this->icon = DIR_WS_TEMPLATE . '/images/icons/shipping_ups.gif';
+            $this->icon = DIR_WS_TEMPLATE . 'images/icons/shipping_ups.gif';
             $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
 
             $this->access_key = MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY;
