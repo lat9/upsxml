@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.4-beta1';
+    public $moduleVersion = '1.7.4';
 
     //***************
     function __construct() 
@@ -388,59 +388,58 @@ class upsxml
             "INSERT INTO " . TABLE_CONFIGURATION . "
                 (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added)
              VALUES
-                ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', '6', '0', NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
+                ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', 6, 0, NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
                 
-                ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', '6', '1', NULL, NULL, now()),
+                ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', 6, 1, NULL, NULL, now()),
                 
-                ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', '6', '2', NULL, NULL, now()),
+                ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', 6, 2, NULL, NULL, now()),
                 
-                ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', '6', '3', NULL, NULL, now()),
+                ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', 6, 3, NULL, NULL, now()),
                 
-                ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', '6', '3', NULL, NULL, now()),
+                ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', 6, 3, NULL, NULL, now()),
                 
-                ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', '6', '16', NULL, 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now()),
+                ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', 6, 16, NULL, 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now()),
                 
-                ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', '6', '16', NULL, 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now()),
+                ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', 6, 16, NULL, 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now()),
                 
-                ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', '6', '4', NULL, 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now()),
+                ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', 6, 4, NULL, 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now()),
                 
-                ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', '6', '5', NULL, 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now()),
+                ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', 6, 5, NULL, 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now()),
                 
-                ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', '6', '6', NULL, NULL, now()),
+                ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', 6, 6, NULL, NULL, now()),
                 
-                ('Shipping Origin', 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN', 'US Origin', 'What origin point should be used (this setting affects only what UPS product names are shown to the user)', '6', '7', NULL, 'zen_cfg_select_option(array(\'US Origin\', \'Canada Origin\', \'European Union Origin\', \'Puerto Rico Origin\', \'Mexico Origin\', \'All other origins\'), ', now()),
                 
-                ('Origin City', 'MODULE_SHIPPING_UPSXML_RATES_CITY', '', 'Enter the name of the origin city.', '6', '8', NULL, NULL, now()),
+                ('Origin City', 'MODULE_SHIPPING_UPSXML_RATES_CITY', '', 'Enter the name of the origin city.', 6, 8, NULL, NULL, now()),
                 
-                ('Origin State/Province', 'MODULE_SHIPPING_UPSXML_RATES_STATEPROV', '', 'Enter the two-letter code for your origin state/province.', '6', '9', NULL, NULL, now()),
+                ('Origin State/Province', 'MODULE_SHIPPING_UPSXML_RATES_STATEPROV', '', 'Enter the two-letter code for your origin state/province.', 6, 9, NULL, NULL, now()),
                 
-                ('Origin Country', 'MODULE_SHIPPING_UPSXML_RATES_COUNTRY', '', 'Enter the two-letter code for your origin country.', '6', '10', NULL, NULL, now()),
+                ('Origin Country', 'MODULE_SHIPPING_UPSXML_RATES_COUNTRY', '', 'Enter the two-letter code for your origin country.', 6, 10, NULL, NULL, now()),
                 
-                ('Origin Zip/Postal Code', 'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE', '', 'Enter your origin zip/postalcode.', '6', '11', NULL, NULL, now()),
+                ('Origin Zip/Postal Code', 'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE', '', 'Enter your origin zip/postalcode.', 6, 11, NULL, NULL, now()),
                 
-                ('Test or Production Mode', 'MODULE_SHIPPING_UPSXML_RATES_MODE', 'Test', 'Use this module in Test or Production mode?', '6', '12', NULL, 'zen_cfg_select_option(array(\'Test\', \'Production\'), ', now()),
+                ('Test or Production Mode', 'MODULE_SHIPPING_UPSXML_RATES_MODE', 'Test', 'Use this module in Test or Production mode?', 6, 12, NULL, 'zen_cfg_select_option(array(\'Test\', \'Production\'), ', now()),
                 
-                ('Unit Weight', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT', 'LBS', 'By what unit are your packages weighed?', '6', '13', NULL, 'zen_cfg_select_option(array(\'LBS\', \'KGS\'), ', now()),
+                ('Unit Weight', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT', 'LBS', 'By what unit are your packages weighed?', 6, 13, NULL, 'zen_cfg_select_option(array(\'LBS\', \'KGS\'), ', now()),
                 
-                ('Unit Length', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH', 'IN', 'By what unit are your packages sized?', '6', '14', NULL, 'zen_cfg_select_option(array(\'IN\', \'CM\'), ', now()),
+                ('Unit Length', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH', 'IN', 'By what unit are your packages sized?', 6, 14, NULL, 'zen_cfg_select_option(array(\'IN\', \'CM\'), ', now()),
                 
-                ('Quote Type', 'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE', 'Commercial', 'Quote for Residential or Commercial Delivery', '6', '15', NULL, 'zen_cfg_select_option(array(\'Commercial\', \'Residential\'), ', now()),
+                ('Quote Type', 'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE', 'Commercial', 'Quote for Residential or Commercial Delivery', 6, 15, NULL, 'zen_cfg_select_option(array(\'Commercial\', \'Residential\'), ', now()),
                 
-                ('Handling Fee', 'MODULE_SHIPPING_UPSXML_RATES_HANDLING', '0', 'Handling fee for this shipping method.', '6', '16', NULL, NULL, now()),
+                ('Handling Fee', 'MODULE_SHIPPING_UPSXML_RATES_HANDLING', '0', 'Handling fee for this shipping method.', 6, 16, NULL, NULL, now()),
                 
-                ('UPS Currency Code', 'MODULE_SHIPPING_UPSXML_CURRENCY_CODE', '" . DEFAULT_CURRENCY . "', 'Enter the 3 letter currency code for your country of origin. United States (USD)', '6', '2', NULL, NULL, now()),
+                ('UPS Currency Code', 'MODULE_SHIPPING_UPSXML_CURRENCY_CODE', '" . DEFAULT_CURRENCY . "', 'Enter the 3 letter currency code for your country of origin. United States (USD)', 6, 2, NULL, NULL, now()),
                 
-                ('Enable Insurance', 'MODULE_SHIPPING_UPSXML_INSURE', 'True', 'Do you want to insure packages shipped by UPS?', '6', '0', NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
+                ('Enable Insurance', 'MODULE_SHIPPING_UPSXML_INSURE', 'True', 'Do you want to insure packages shipped by UPS?', 6, 0, NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
                 
-                ('Tax Class', 'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS', '0', 'Use the following tax class on the shipping fee.', '6', '17', 'zen_get_tax_class_title', 'zen_cfg_pull_down_tax_classes(', now()),
+                ('Tax Class', 'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS', '0', 'Use the following tax class on the shipping fee.', 6, 17, 'zen_get_tax_class_title', 'zen_cfg_pull_down_tax_classes(', now()),
                 
-                ('Shipping Zone', 'MODULE_SHIPPING_UPSXML_RATES_ZONE', '0', 'If a zone is selected, only enable this shipping method for that zone.', '6', '18', 'zen_get_zone_class_title', 'zen_cfg_pull_down_zone_classes(', now()),
+                ('Shipping Zone', 'MODULE_SHIPPING_UPSXML_RATES_ZONE', '0', 'If a zone is selected, only enable this shipping method for that zone.', 6, 18, 'zen_get_zone_class_title', 'zen_cfg_pull_down_zone_classes(', now()),
                 
-                ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '19', NULL, NULL, now()),
+                ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', 6, 19, NULL, NULL, now()),
                 
-                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', '6', '20', NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early A.M.\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
+                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early A.M.\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
                 
-                ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', '6', '7', NULL, NULL, now())"
+                ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', 6, 7, NULL, NULL, now())"
         );
     }
 

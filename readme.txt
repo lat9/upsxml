@@ -1,4 +1,4 @@
-UPS XML Rates v1.7.3 for Zen Cart (for Zen Cart versions 1.5.3 and later)
+UPS XML Rates v1.7.4 for Zen Cart (for Zen Cart versions 1.5.3 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -232,5 +232,6 @@ the upsxml module.
 -------------
 
 - Remove unwanted directory-separator from UPS icon
+- Remove single-quotes from numeric fields inserted on shipping-method installation.
   - Updated /includes/modules/shipping/upsxml.php
 
