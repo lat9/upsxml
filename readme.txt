@@ -234,4 +234,11 @@ the upsxml module.
 - Remove unwanted directory-separator from UPS icon
 - Remove single-quotes from numeric fields inserted on shipping-method installation.
   - Updated /includes/modules/shipping/upsxml.php
+  
+-------------
+1.7.5 Changelog (lat9)
+-------------
 
+- Correctly use UPS-supplied messages, if present, on a quote error
+- Restore 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN' setting, "lost" in v1.7.4.
+  - Updated /includes/modules/shipping/upsxml.php
