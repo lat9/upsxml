@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.5';
+    public $moduleVersion = '1.7.6';
 
     //***************
     function __construct() 
@@ -106,7 +106,7 @@ class upsxml
             $this->today = date('Ymd');
 
             // insurance addition
-            $this->pkgvalue = (MODULE_SHIPPING_UPSXML_INSURE == 'False' || !isset($order)) ? 100 : ceil($order->info['subtotal']);
+            $this->pkgvalue = (MODULE_SHIPPING_UPSXML_INSURE == 'False' || !isset($order->info['subtotal'])) ? ceil($_SESSION['cart']->total) : ceil($order->info['subtotal']);
             // end insurance addition
             
             $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG == 'true');

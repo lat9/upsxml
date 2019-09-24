@@ -1,4 +1,4 @@
-UPS XML Rates v1.7.4 for Zen Cart (for Zen Cart versions 1.5.3 and later)
+UPS XML Rates v1.7.6 for Zen Cart (for Zen Cart versions 1.5.3 and later)
 
 Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com
 Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com
@@ -241,4 +241,11 @@ the upsxml module.
 
 - Correctly use UPS-supplied messages, if present, on a quote error
 - Restore 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN' setting, "lost" in v1.7.4.
+  - Updated /includes/modules/shipping/upsxml.php
+  
+-------------
+1.7.6 Changelog (lat9)
+-------------
+
+- Correct insurance not recognized when using the shipping estimator.
   - Updated /includes/modules/shipping/upsxml.php
