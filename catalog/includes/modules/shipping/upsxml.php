@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.5
+ * UPS XML v1.7.6
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
