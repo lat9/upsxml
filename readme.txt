@@ -255,5 +255,6 @@ the upsxml module.
 -------------
 
 - Correct PHP notice when viewing in admin's "Modules->Shipping"
+- Display "New version available" information **only** when viewing the admin's "Modules->Shipping"
   - Updated /includes/modules/shipping/upsxml.php
 

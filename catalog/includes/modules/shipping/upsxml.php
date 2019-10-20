@@ -53,7 +53,7 @@ class upsxml
         }
         $this->description = MODULE_SHIPPING_UPSXML_RATES_TEXT_DESCRIPTION;
 
-        if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS')) {
+        if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && basename($GLOBALS['PHP_SELF'], '.php') == FILENAME_MODULES) {
             $new_version_details = plugin_version_check_for_updates(126, $this->moduleVersion);
             if ($new_version_details !== false) {
                 $this->title .= '<span class="alert">' . ' - NOTE: A NEW VERSION OF THIS PLUGIN IS AVAILABLE. <a href="' . $new_version_details['link'] . '" target="_blank">[Details]</a>' . '</span>';
