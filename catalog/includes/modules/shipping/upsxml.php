@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.6
+ * UPS XML v1.7.7
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.6';
+    public $moduleVersion = '1.7.7';
 
     //***************
     function __construct() 
@@ -106,7 +106,14 @@ class upsxml
             $this->today = date('Ymd');
 
             // insurance addition
-            $this->pkgvalue = (MODULE_SHIPPING_UPSXML_INSURE == 'False' || !isset($order->info['subtotal'])) ? ceil($_SESSION['cart']->total) : ceil($order->info['subtotal']);
+            $this->pkgvalue = 0;
+            if (MODULE_SHIPPING_UPSXML_INSURE == 'True') {
+                if (isset($order->info['subtotal'])) {
+                    $this->pkgvalue = ceil($order->info['subtotal']);
+                } elseif (isset($_SESSION['cart']->total)) {
+                    $this->pkgvalue = ceil($_SESSION['cart']->total);
+                }
+            }
             // end insurance addition
             
             $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG == 'true');
