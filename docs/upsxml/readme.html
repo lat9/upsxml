@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+<meta charset="utf8">
+<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
+<title>UPSXML Shipping Module for Zen Cart 1.5.3 and later</title>
+
+<style type="text/css">
+<!--
+a, a:active, a:visited { color: #006666; text-decoration: none; }
+a:hover { color:#00CC99; text-decoration: underline; }
+body, p, h1, h2, h3, h4, h5, h6, li, td, dd, dt { font-family: Verdana, AvantGarde, Tahoma, Arial, sans-serif; font-size: 10pt; color: black; padding: 0px; margin: 20px; }
+pre { margin: 20px; }
+H1, H2, H3, H4 { font-weight: bold }
+h1 { font-size: 20px; }
+h2 { font-size: 16px; }
+ol li, ul li { margin: 5px 0; }
+.corefile, .impt { color: red; }
+img { margin-left: 20px; max-width: 95%; }
+.removed { text-decoration: line-through; }
+.smaller { font-size: smaller; }
+-->
+</style>
+</head>
+
+<body>
+<h1>UPSXML Shipping Module for Zen Cart 1.5.3 and later</h1>
+<h3>Version 1.7.7, by lat9</h3>
+<p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
+
+<h4>Contributers and Copyrights</h4>
+<ul>
+    <li>Original Copyright (c) 2003 Torin Walker, torinwalker@rogers.com</li>
+    <li>Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com</li>
+    <li>Modified for zen-cart 1.2.5d by Dennis Sayer - July 9, 2005, dennis.s.sayer@brandnamebatteries.com</li>
+    <li>Updated for zen-cart 1.5.1 by Brian Gundlach - June 10, 2014, Brian@gundlach-marketing.com</li>
+    <li>Copyright (C) 2017-2019, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
+</ul>
+
+<hr />
+<h2>Description</h2>
+<p>This module provides the eCommerce Zen Cart community with the long-awaited XML version of the UPS Rates and Services gateway. It supports multiple (storefront) languages, multiple geographic origins and implements the 
+most necessary features offered by the UPS Rates and Services system. The module connects to UPS, retrieves a list of available shipping methods and prices and presents them to the customer.</p>
+
+<p>Settings are changed in a store's Zen Cart admin interface under <b>Modules-&gt;Shipping&gt;United Parcel Service (upsxml)</b>.  The administrative interface shows shipper- (not customer-) related variables such as package type and origin in English, but customer-facing product names (the name UPS uses to describe its services, such as <em>Express Plus</em> or <em>Ground</em>) can be multi-lingual.</p>
+
+<hr />
+<h2>Installation</h2>
+<p>This plugin currently has no <span class="corefile">core-file overwrites</span>; you should <strong>always</strong> backup your cart's database and files prior to making any changes.</p>
+<ol>
+  <li>Unzip the plugin's package file, which you've most likely already done if you're reading this!</li>
+  <li>Copy the plugin's <em>new</em> files, from the zip-file's <code>/catalog/includes</code> sub-directory to the like-named sub-directories in your store's <code>/includes</code> sub-directory:<ol>
+    <li>/includes/classes/xmldocument.php</li>
+    <li>/includes/languages/english/modules/shipping/upsxml.php</li>
+    <li>/includes/modules/shipping/upsxml.php</li>
+    <li>/includes/templates/template_default/images/icons/shipping_ups.gif</li>
+  </ol></li>
+  <li>If you <b><i>do not</i></b> already have UPS access credentials:<ol>
+    <li>UPS Rates account username</li>
+    <li>UPS Rates account password</li>
+    <li>UPS Rates Access Key</li>
+  </ol>then<ol type="a">
+    <li>Register at UPS for an account: <a href="https://wwwapps.ups.com/doapp/signup?sysid=myups" target="_blank">https://wwwapps.ups.com/doapp/signup?sysid=myups</a></li>
+    <li>Once you're registered, <b>Request an Access Key</b> using this link: <a href="https://www.ups.com/upsdeveloperkit" target="_blank">https://www.ups.com/upsdeveloperkit?loc=en_US</a></li>
+    <li>Write down the XML Access Key; you will need that key to enable the <b>UPS XML</b> shipping module.</li>
+  </ol></li>
+  <li>Log into your Zen Cart admin and use the <em>Modules-&gt;Shipping</em> tool to configure and enable the shipping-module for your store's use.</li>
+</ol>
+
+<hr />
+<h2>Configure and Test the Shipping Module</h2>
+<p>In admin, choose <b><i>Modules-&gt;Shipping</i></b> and activate the new United Parcel Service (upsxml) module.  Edit the module and set your service options:<p>
+<ol>
+    <li>Enable UPS Shipping</li>
+    <li>Tax Class</li>
+    <li>Shipping Zone</li>
+    <li>Sort order of display</li>
+    <li>Pickup Method</li>
+    <li>Packaging Type</li>
+    <li>Customer Classification Code</li>
+    <li>Shipping Origin (determines what UPS shipping-method names are displayed to the customer)</li>
+    <li>Origin City (required for some countries)</li>
+    <li>Origin State/Province (the two-letter ISO-3166 code)</li>
+    <li>Origin Country (the two-letter ISO-3166 code)</li>
+    <li>Origin Zip/Postal Code</li>
+    <li>UPS Currency Code</li>
+    <li>Unit Weight</li>
+    <li>Unit Length</li>
+    <li>Quote Type</li>
+    <li>Handling Fee</li>
+    <li>Enable Insurance</li>
+    <li>Shipping Methods</li>
+    <li>Shipping Delay</li>
+    <li>UPS Rates Access Key <span class="smaller"><b>(obtain from UPS)</b></span></li>
+    <li>UPS Rates Username <span class="smaller"><b>(obtain from UPS)</b></span></li>
+    <li>UPS Rates Password <span class="smaller"><b>(obtain from UPS)</b></span></li>
+    <li>UPS Rates &quot;Shipper Number&quot; <span class="smaller"><b>(obtain from UPS)</b></span></li>
+    <li>UPS XML Display options (to identify whether time-in-transit and package weight are displayed to the customer).</li>
+    <li>Enable debug?</li>
+    <li>Test or Production Mode</li>
+</ol>
+<p>If you have any questions regarding the above settings, please refer to the documentation provided to you by UPS when you signed up for and received your access key.</p>
+
+<p>Once configured, make sure that the results your store receives are what you expect:</p>
+<ol>
+    <li>Test by setting your customer destination to all sorts of different places and running through the shipping process several times. Please test thoroughly before committing to its use.</li>
+    <li>If you fail to get quotes, an error message will usually tell you why. Make sure your origin information is correct and use the proper two-letter codes for your country and state/province.</li>
+    <li>If you <b>still</b> don't get any quotes, you can enable logging which will record the request/response of the transactions and any cURL errors. Starting with v1.7, just update the shipping method's debug via your admin's <b><i>Modules-&gt;Shipping</i></b>, editing the upsxml module.</li>
+</ol>
+
+<hr />
+<h2>Version History</h2>
+<ul>
+  <li>1.7.7, 2019-10-23 (lat9)<ul>
+    <li>BUGFIX: Correct PHP notice when viewing in admin's <b><i>Modules-&gt;Shipping</i></b>.</li>
+    <li>CHANGE: Display "New version available" information <b>only</b> when viewing the admin's <b><i>Modules-&gt;Shipping</i></b>.</li>
+    <li>BUGFIX: Correctly offer "Next Day Air Early", if configured and provided in the UPS quote.</li>
+    <li>BUGFIX: Sort quotes returned in ascending cost order.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.6, 2019-09-29 (lat9)<ul>
+    <li>BUGFIX: Correct insurance not recognized when using the shipping estimator.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.5, 2019-09-07 (lat9)<ul>
+    <li>BUGFIX: Correctly use UPS-supplied messages, if present, on a quote error.</li>
+    <li>BUGFIX: Restore 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN' setting, "lost" in v1.7.4.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.4, 2019-08-24 (lat9)<ul>
+    <li>BUGFIX: Remove unwanted directory-separator from UPS icon.</li>
+    <li>BUGFIX: Remove single-quotes from numeric fields inserted on shipping-method installation.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.3, 2019-06-26 (lat9, benharold)<ul>
+    <li>BUGFIX: Correct undefined constants' issues (required for PHP 7.2+)</li>
+    <li>CHANGE: Updated the shipping method's debug log filename to include the date on which the log was made.</li>
+    <li>BUGFIX: Don't return methods if an error is reported by UPS.</li>
+    <li>CHANGE: Remove support for Zen Carts prior to 1.5.3.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/classes/xmldocument.php</li>
+      <li>/includes/languages/english/modules/shipping/upsxml.php</li>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.2, 2018-01-22 (lat9)<ul>
+    <li>BUGFIX: Don't issue the invalid "Currency Code" message until the module is installed and enabled.</li>
+    <li>BUGFIX: Don't request negotiated rates if the ship-to state has not been set (i.e. when used by the shipping-estimator).</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7.1, 2017-10-08 (lat9)<ul>
+    <li>BUGFIX: An invalid "Currency Code" resulted in invalid results returned when negotiated rates were enabled.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/classes/xmldocument.php</li>
+      <li>/includes/languages/english/modules/shipping/upsxml.php</li>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
+  <li>1.7, 2017-09-23 (lat9)<ul>
+    <li>CHANGE: Updated /includes/classes/xmldocument.php for PHP 7.0+ interoperability.</li>
+    <li>CHANGE: Added a "Shipper Number" field to the configuration.  This value is needed if your store wants to receive your UPS-negotiated rates.</li>
+    <li>CHANGE: Added configuration settings, allowing you to control whether or not the weight and/or transit-time displays should be included.</li>
+    <li>CHANGE: Added a configuration setting to allow you to control whether or not the plugin's debug output is to be activated.</li>
+    <li>CHANGE: Updated the plugin's "title", displaying the current version only during admin configuration.</li>
+    <li>CHANGE: Refactoring for PSR2 and more strict PHP/MySQL versions.</li>
+  </ul></li>
+  <li>1.6.1<ul>
+    <li>simply changed mysql_ function to mysqli_ for zen cart 1.5.5 and future PHP compatibility</li>
+  </ul></li>
+  <li>1.5.1<ol>
+    <li>updated CURL implementation</li>
+    <li>fixed PHP compatibility issues with PHP 5.3 and newer</li>
+    <li>changed suggested logfile location to /logs/ folder</li>
+    <li>removed the need to duplicate the xmldocument.php into the admin folder</li>
+    <li>added Customer Classification Code 00 to get account rates (requires that you actually have negotiated rates)</li>
+    <li>Compatible with Zen Cart 1.5.1, 1.5.2, 1.5.3, 1.5.4, 1.5.5</li>
+  </ol></li>
+  <li>1.5:<ol>
+    <li>Updated Mexico Origin module names in language file</li>
+    <li>included a logfile & logfile path, settings</li>
+    <li>changed appropriate ups urls in install</li>
+  </ol></li>
+</ul>
+
+<hr />
+<h2>Credits and Early Change History</h2>
+<ul>
+    <li>Updated/modified/repackaged for osCommerce 2.2 MS2 by Stuart Owens 11/14/04</li>
+    <li>Time in Transit fixed by Greg MacLellan 11/15/04</li>
+    <li>A few bugfixes and installation added to upsxml.php JanZ 11/27/04 (1.1.3)</li>
+    <li>Bugfix for ship in cart: Jackie Edwards (1.1.3a)</li>
+    <li>More options for cURL (CLI support added and logging of cURL errors) JanZ 12/18/04 (1.1.4)</li>
+    <li>Updated/modified/repackaged for zen-cart 1.2.5d by Dennis Sayer 07/09/2005</li>
+</ul>
+
+<p>Thanks to the many other authors who laid down their efforts in contributions from which has produced this. Your efforts are greatly appreciated:</p>
+<ol>
+    <li>Original Contribution and updates - Torin Walker</li>
+    <li>Time In Transit capability - Donna Gordon</li>
+    <li>Bug fixes - Fox Morrey</li>
+    <li>Admin selectable methods and bug fixes - Jan Zonjee/Stuart Owens</li>
+    <li>Modified for zen-cart 1.2.5d by Dennis Sayer</li>
+    <li>Tested for zen-cart 1.3+ by Dennis Sayer</li>
+    <li>V1.5 testing, bugfixes and installation update - Brian Gundlach</li>
+    <li>small fix for zen cart 1.5.5x and future PHP compatibility - lankeeyankee</li>
+</ol>
+<h3>A Note from Dennis Sayer</h3>
+<p>Thank you to Torin Walker for giving this code a GNU General Public License. I have removed your comments to web sites that no longer exist. I have also changed or deleted text that is not related to zen-cart.</p>
+
+</body>
+</html>
