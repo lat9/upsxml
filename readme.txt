@@ -256,5 +256,6 @@ the upsxml module.
 
 - Correct PHP notice when viewing in admin's "Modules->Shipping"
 - Display "New version available" information **only** when viewing the admin's "Modules->Shipping"
+- Correctly offer "Next Day Air Early", if configured and provided in the UPS quote.
   - Updated /includes/modules/shipping/upsxml.php
 

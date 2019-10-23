@@ -119,8 +119,25 @@ class upsxml
             $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG == 'true');
             $this->logfile = DIR_FS_LOGS . '/upsxml-' . date('Ymd') . '.log';
         }
+        
+        // -----
+        // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
+        //
+        if (IS_ADMIN_FLAG === true) {
+            $GLOBALS['db']->Execute(
+                "UPDATE " . TABLE_CONFIGURATION . "
+                    SET configuration_value = REPLACE(configuration_value, 'Next Day Air Early A.M.', 'Next Day Air Early'),
+                        set_function = REPLACE(set_function, 'Next Day Air Early A.M.', 'Next Day Air Early')
+                  WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
+                  LIMIT 1"
+            );
+        }
 
-        if ($this->enabled && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
+        // -----
+        // Determine whether UPS shipping should be offered, based on the current order's
+        // zone-id (storefront **only**).
+        //
+        if (IS_ADMIN_FLAG === false && $this->enabled && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
             $check = $db->Execute(
                 "SELECT zone_id 
                    FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
@@ -445,7 +462,7 @@ class upsxml
                 
                 ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', 6, 19, NULL, NULL, now()),
                 
-                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early A.M.\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
+                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
                 
                 ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', 6, 7, NULL, NULL, now())"
         );
