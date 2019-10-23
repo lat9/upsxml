@@ -374,6 +374,17 @@ class upsxml
             if ($this->tax_class > 0) {
                 $this->quotes['tax'] = zen_get_tax_rate($this->tax_class, $order->delivery['country']['id'], $order->delivery['zone_id']);
             }
+            
+            // -----
+            // Sort the shipping methods to be returned in ascending order of cost.
+            //
+            usort($methods, function($a, $b) {
+                if ($a['cost'] == $b['cost']) {
+                    return 0;
+                }
+                return ($a['cost'] < $b['cost']) ? -1 : 1;
+            });
+            
             $this->quotes['methods'] = $methods;
         } else {
             if (!empty($upsQuote)) {
