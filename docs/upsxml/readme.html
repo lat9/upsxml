@@ -25,7 +25,7 @@ img { margin-left: 20px; max-width: 95%; }
 
 <body>
 <h1>UPSXML Shipping Module for Zen Cart 1.5.3 and later</h1>
-<h3>Version 1.7.7, by lat9</h3>
+<h3>Version 1.7.8, by lat9</h3>
 <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
 
 <h4>Contributers and Copyrights</h4>
@@ -34,7 +34,7 @@ img { margin-left: 20px; max-width: 95%; }
     <li>Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com</li>
     <li>Modified for zen-cart 1.2.5d by Dennis Sayer - July 9, 2005, dennis.s.sayer@brandnamebatteries.com</li>
     <li>Updated for zen-cart 1.5.1 by Brian Gundlach - June 10, 2014, Brian@gundlach-marketing.com</li>
-    <li>Copyright (C) 2017-2019, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
+    <li>Copyright (C) 2017-2020, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
 </ul>
 
 <hr />
@@ -111,6 +111,13 @@ most necessary features offered by the UPS Rates and Services system. The module
 <hr />
 <h2>Version History</h2>
 <ul>
+  <li>1.7.8, 2020-06-29 (lat9)<ul>
+    <li>BUGFIX: Shipping-method names couldn't be translated.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+    <li><b>Note:</b> This update appends the UPS <em>Service Code</em> to the names of the individually-selectable shipping methods. If you are <em>upgrading</em>, it's very, <em>very</em> important to go to your admin's <b><i>Modules-&gt;Shipping</i></b> for your existing configuration to be updated.  Otherwise, your customers won't receive UPS quotes.</li>
+  </ul></li>
   <li>1.7.7, 2019-10-23 (lat9)<ul>
     <li>BUGFIX: Correct PHP notice when viewing in admin's <b><i>Modules-&gt;Shipping</i></b>.</li>
     <li>CHANGE: Display "New version available" information <b>only</b> when viewing the admin's <b><i>Modules-&gt;Shipping</i></b>.</li>

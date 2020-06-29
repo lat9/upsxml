@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.7';
+    public $moduleVersion = '1.7.8';
 
     //***************
     function __construct() 
@@ -61,7 +61,10 @@ class upsxml
         }
         
         $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True');
-        $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : false;
+        $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : null;
+        if ($this->sort_order === null) {
+            return false;
+        }
         if ($this->enabled) {
             $this->icon = DIR_WS_TEMPLATE . 'images/icons/shipping_ups.gif';
             $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
@@ -121,9 +124,12 @@ class upsxml
         }
         
         // -----
-        // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
+        // Provide various configuration fix-ups during admin configuration.
         //
         if (IS_ADMIN_FLAG === true) {
+            // -----
+            // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
+            //
             $GLOBALS['db']->Execute(
                 "UPDATE " . TABLE_CONFIGURATION . "
                     SET configuration_value = REPLACE(configuration_value, 'Next Day Air Early A.M.', 'Next Day Air Early'),
@@ -131,6 +137,41 @@ class upsxml
                   WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
                   LIMIT 1"
             );
+            
+            // -----
+            // v1.7.8: The 'serviceCode' values are now parenthetically suffixed to their respective
+            // names, enabling multi-language configuration.
+            //
+            if (strpos(MODULE_SHIPPING_UPSXML_TYPES, '[') === false) {
+                $upsxml_value_mapping = array(
+                    'Next Day Air' => '01',
+                    '2nd Day Air' => '02',
+                    'Ground' => '03',
+                    'Worldwide Express' => '07',
+                    'Worldwide Expedited' => '08',
+                    'Standard' => '11',
+                    '3 Day Select' => '12',
+                    'Next Day Air Saver' => '13',
+                    'Next Day Air Early' => '14',
+                    'Worldwide Express Plus' => '54',
+                    '2nd Day Air A.M.' => '59',
+                    'Worldwide Saver' => '65',
+                );
+                $upsxml_types_configured = explode(',', str_replace(', ', ',', MODULE_SHIPPING_UPSXML_TYPES));
+                foreach ($upsxml_types_configured as &$upsxml_type) {
+                    $upsxml_type .= (isset($upsxml_value_mapping[$upsxml_type])) ? (' [' . $upsxml_value_mapping[$upsxml_type] . ']') : ' [???]';
+                }
+                unset($upsxml_type);
+                $upsxml_types = implode(', ', $upsxml_types_configured);
+                
+                $db->Execute(
+                    "UPDATE " . TABLE_CONFIGURATION . "
+                        SET configuration_value = '$upsxml_types',
+                            set_function = 'zen_cfg_select_multioption(array(\'Next Day Air [01]\', \'2nd Day Air [02]\', \'Ground [03]\', \'Worldwide Express [07]\', \'Worldwide Expedited [08]\', \'Standard [11]\', \'3 Day Select [12]\', \'Next Day Air Saver [13]\', \'Next Day Air Early [14]\', \'Worldwide Express Plus [54]\', \'2nd Day Air A.M. [59]\', \'Express Saver [65]\'), '
+                      WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
+                      LIMIT 1"
+                );
+            }
         }
 
         // -----
@@ -341,36 +382,41 @@ class upsxml
                 'module' => $this->title . $weight_info
             );
             $methods = array();
-            foreach ($upsQuote as $quote) {
-                foreach ($quote as $type => $cost) {
-                    // BOF limit choices
-                    if (!$this->excludeChoices($type)) {
-                        continue;
-                    }
-                    // EOF limit choices
-                    if ($method == '' || $method == $type) {
-                        $_type = $type;
-                        if ($this->displayTransitTime) {
-                            //if (isset($this->servicesTimeintransit[$type])) {
-                            //    $_type = $_type . ", ".$this->servicesTimeintransit[$type]["date"];
-                            //}
-                            // instead of just adding the expected delivery date as ", yyyy-mm-dd"
-                            // you might like to change this to your own liking for example by commenting the
-                            // three lines above this and uncommenting/changing the next:
-                            // START doing things differently
-                            if (isset($this->servicesTimeintransit[$type])) {
-                                $eta_array = explode('-', $this->servicesTimeintransit[$type]["date"]);
-                                $months = array (' ', "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
-                                $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
-                                $_type .= ", ETA: ".$eta_arrival_date;
-                            }
-                            // END of doing things differently:
-                        }
+            foreach ($upsQuote as $serviceCode => $quote_info) {
+                $type = $quote_info['title'];
+                $cost = $quote_info['cost'];
 
-                        $methods[] = array('id' => $type, 'title' => $_type, 'cost' => ($this->handling_fee + $cost));
+                if ($this->excludeChoices($serviceCode)) {
+                    continue;
+                }
+
+                if ($method == '' || $method == $type) {
+                    $_type = $type;
+                    if ($this->displayTransitTime) {
+                        //if (isset($this->servicesTimeintransit[$type])) {
+                        //    $_type = $_type . ", ".$this->servicesTimeintransit[$type]["date"];
+                        //}
+                        // instead of just adding the expected delivery date as ", yyyy-mm-dd"
+                        // you might like to change this to your own liking for example by commenting the
+                        // three lines above this and uncommenting/changing the next:
+                        // START doing things differently
+                        if (isset($this->servicesTimeintransit[$type])) {
+                            $eta_array = explode('-', $this->servicesTimeintransit[$type]["date"]);
+                            $months = array (' ', "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
+                            $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
+                            $_type .= ", ETA: ".$eta_arrival_date;
+                        }
+                        // END of doing things differently:
                     }
+
+                    $methods[] = array(
+                        'id' => $type, 
+                        'title' => $_type, 
+                        'cost' => ($this->handling_fee + $cost)
+                    );
                 }
             }
+
             if ($this->tax_class > 0) {
                 $this->quotes['tax'] = zen_get_tax_rate($this->tax_class, $order->delivery['country']['id'], $order->delivery['zone_id']);
             }
@@ -473,7 +519,7 @@ class upsxml
                 
                 ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', 6, 19, NULL, NULL, now()),
                 
-                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air, 2nd Day Air, Ground, Worldwide Express, Standard, 3 Day Select', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air\', \'2nd Day Air\', \'Ground\', \'Worldwide Express\', \'Worldwide Expedited\', \'Standard\', \'3 Day Select\', \'Next Day Air Saver\', \'Next Day Air Early\', \'Worldwide Express Plus\', \'2nd Day Air A.M.\', \'Express NA1\', \'Express Saver\'), ', now()),
+                ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air [01], 2nd Day Air [02], Ground [03], Worldwide Express [07], Standard [11], 3 Day Select [12]', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air [01]\', \'2nd Day Air [02]\', \'Ground [03]\', \'Worldwide Express [07]\', \'Worldwide Expedited [08]\', \'Standard [11]\', \'3 Day Select [12]\', \'Next Day Air Saver [13]\', \'Next Day Air Early [14]\', \'Worldwide Express Plus [54]\', \'2nd Day Air A.M. [59]\', \'Express Saver [65]\'), ', now()),
                 
                 ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', 6, 7, NULL, NULL, now())"
         );
@@ -887,7 +933,10 @@ class upsxml
             if ($aryProducts === false) {
                 $aryProducts = array();
             }
-            $aryProducts[$i] = array($title => $totalCharge);
+            $aryProducts[$serviceCode] = array(
+                'title' => $title,
+                'cost' => $totalCharge
+            );
         }
         return $aryProducts;
     }
@@ -1019,26 +1068,11 @@ class upsxml
     //EOF Time In Transit
     
     // -----
-    // This method checks to see if the UPS shipping 'type' is one that the store has configured.
+    // This method checks to see if the UPS shipping 'serviceCode' is one that the store has configured.
     //
-    // The 'type' value is submitted as '[UPS]type-value[(stuff)]' and we're looking for just the
-    // 'type-value' portion, so we'll remove any 'UPS' present in the value and then truncate
-    // the string at any open-parentheses found prior to checking.
-    //
-    protected function excludeChoices($type) 
+    protected function excludeChoices($serviceCode) 
     {
-        $type = str_replace('UPS', '', $type);
-        if (($pos = strpos($type, '(')) !== false) {
-            $type = substr($type, 0, $pos + 1);
-        }
-        $type = trim($type);
-        $allowed_types = explode(',', MODULE_SHIPPING_UPSXML_TYPES);
-        foreach ($allowed_types as $current_type) {
-            if ($type == trim($current_type)) {
-                return true;
-            }
-        }
-        return false;
+        return (strpos(MODULE_SHIPPING_UPSXML_TYPES, " [$serviceCode]") === false);
     }
     
     protected function debugLog($message, $include_spacer = false)
