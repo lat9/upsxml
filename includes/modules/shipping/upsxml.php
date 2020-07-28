@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.7
+ * UPS XML v1.7.9
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -40,7 +40,7 @@ define('DIMENSIONS_SUPPORTED', 0);
 class upsxml 
 {
     public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.8';
+    public $moduleVersion = '1.7.9';
 
     //***************
     function __construct() 
@@ -107,6 +107,26 @@ class upsxml
             $this->items_qty = 0;
             $this->timeintransit = '0';
             $this->today = date('Ymd');
+            
+            // -----
+            // Since the time-in-transit and rate services use different codes to identify the
+            // associated shipping-method, but the same service-names, we'll include a table to
+            // provide that association.
+            //
+            $this->upsxml_value_mapping = array(
+                'Next Day Air' => '01',
+                '2nd Day Air' => '02',
+                'Ground' => '03',
+                'Worldwide Express' => '07',
+                'Worldwide Expedited' => '08',
+                'Standard' => '11',
+                '3 Day Select' => '12',
+                'Next Day Air Saver' => '13',
+                'Next Day Air Early' => '14',
+                'Worldwide Express Plus' => '54',
+                '2nd Day Air A.M.' => '59',
+                'Worldwide Saver' => '65',
+            );
 
             // insurance addition
             $this->pkgvalue = 0;
@@ -143,23 +163,9 @@ class upsxml
             // names, enabling multi-language configuration.
             //
             if (strpos(MODULE_SHIPPING_UPSXML_TYPES, '[') === false) {
-                $upsxml_value_mapping = array(
-                    'Next Day Air' => '01',
-                    '2nd Day Air' => '02',
-                    'Ground' => '03',
-                    'Worldwide Express' => '07',
-                    'Worldwide Expedited' => '08',
-                    'Standard' => '11',
-                    '3 Day Select' => '12',
-                    'Next Day Air Saver' => '13',
-                    'Next Day Air Early' => '14',
-                    'Worldwide Express Plus' => '54',
-                    '2nd Day Air A.M.' => '59',
-                    'Worldwide Saver' => '65',
-                );
                 $upsxml_types_configured = explode(',', str_replace(', ', ',', MODULE_SHIPPING_UPSXML_TYPES));
                 foreach ($upsxml_types_configured as &$upsxml_type) {
-                    $upsxml_type .= (isset($upsxml_value_mapping[$upsxml_type])) ? (' [' . $upsxml_value_mapping[$upsxml_type] . ']') : ' [???]';
+                    $upsxml_type .= (isset($this->upsxml_value_mapping[$upsxml_type])) ? (' [' . $this->upsxml_value_mapping[$upsxml_type] . ']') : ' [???]';
                 }
                 unset($upsxml_type);
                 $upsxml_types = implode(', ', $upsxml_types_configured);
@@ -328,6 +334,17 @@ class upsxml
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
         
         // -----
+        // Default the language-file constants, added in v1.7.9, in case the shipping-method's language file(s) have
+        // not yet been updated.
+        //
+        if (!defined('MODULE_SHIPPING_UPSXML_ETA_FORMAT')) {
+            define('MODULE_SHIPPING_UPSXML_ETA_FORMAT', 'F d, Y');
+        }
+        if (!defined('MODULE_SHIPPING_UPSXML_ETA_TEXT')) {
+            define('MODULE_SHIPPING_UPSXML_ETA_TEXT', 'ETA: ');
+        }
+        
+        // -----
         // When rates are requested from the shipping-estimator, the city isn't set and the postcode might not be.  Provide
         // defaults for the request.
         //
@@ -355,10 +372,8 @@ class upsxml
         }
         if ($this->displayTransitTime) {
             // BOF Time In Transit:
-            // comment out this section if you don't want/need to have expected delivery dates
             $this->servicesTimeintransit = $this->_upsGetTimeServices();
             $this->debugLog(
-                "Time in Transit: {$this->timeintransit}" . PHP_EOL .
                 "Shipping weight: $shipping_weight" . PHP_EOL .
                 "Shipping Num Boxes: $shipping_num_boxes" . PHP_EOL .
                 "this: " . var_export($this, true),
@@ -381,6 +396,15 @@ class upsxml
                 'id' => $this->code,
                 'module' => $this->title . $weight_info
             );
+
+            // -----
+            // These two arrays aid in 'connecting' the identified rates to their time-in-transit, aka ETA date.  The
+            // time-in-transit response is 'keyed' based on the default/English shipping-method names (e.g. 'UPS Ground') that
+            // are returned by the UPS API, while the rates returned are 'keyed' based on a service-code.
+            //
+            $codes_to_services = array_flip($this->upsxml_value_mapping);
+            $methods_to_codes = array_flip($this->service_codes[$this->origin]);
+            
             $methods = array();
             foreach ($upsQuote as $serviceCode => $quote_info) {
                 $type = $quote_info['title'];
@@ -392,21 +416,13 @@ class upsxml
 
                 if ($method == '' || $method == $type) {
                     $_type = $type;
-                    if ($this->displayTransitTime) {
-                        //if (isset($this->servicesTimeintransit[$type])) {
-                        //    $_type = $_type . ", ".$this->servicesTimeintransit[$type]["date"];
-                        //}
-                        // instead of just adding the expected delivery date as ", yyyy-mm-dd"
-                        // you might like to change this to your own liking for example by commenting the
-                        // three lines above this and uncommenting/changing the next:
-                        // START doing things differently
-                        if (isset($this->servicesTimeintransit[$type])) {
-                            $eta_array = explode('-', $this->servicesTimeintransit[$type]["date"]);
-                            $months = array (' ', "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
-                            $eta_arrival_date = $months[(int)$eta_array[1]]." ".$eta_array[2].", ".$eta_array[0];
-                            $_type .= ", ETA: ".$eta_arrival_date;
+                    if ($this->displayTransitTime && isset($methods_to_codes[$type])) {
+                        $method_code = $methods_to_codes[$type];
+                        $ups_service_name = $codes_to_services[$method_code];
+                        if (isset($this->servicesTimeintransit[$ups_service_name])) {
+                            $eta_arrival_date = date(MODULE_SHIPPING_UPSXML_ETA_FORMAT, strtotime($this->servicesTimeintransit[$ups_service_name]['date']));
+                            $_type .= ', ' . MODULE_SHIPPING_UPSXML_ETA_TEXT . $eta_arrival_date;
                         }
-                        // END of doing things differently:
                     }
 
                     $methods[] = array(
@@ -949,7 +965,7 @@ class upsxml
     protected function _upsGetTimeServices() 
     {
         if (defined('SHIPPING_DAYS_DELAY')) {
-             $shipdate = date("Ymd", time()+(86400*SHIPPING_DAYS_DELAY));
+             $shipdate = date('Ymd', time() + (86400 * SHIPPING_DAYS_DELAY));
         } else {
             $shipdate = $this->today;
         }
@@ -1034,7 +1050,7 @@ class upsxml
        $responseStatusCode = $doc->getValueByPath('TimeInTransitResponse/Response/ResponseStatusCode');
        if ($responseStatusCode != '1') {
            $errorMsg = $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorCode');
-           $errorMsg .= ": ";
+           $errorMsg .= ': ';
            $errorMsg .= $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorDescription');
            return $errorMsg;
        }
@@ -1042,24 +1058,24 @@ class upsxml
        $rootChildren = $root->getChildren();
        for ($r = 0; $r < count($rootChildren); $r++) {
            $elementName = $rootChildren[$r]->getName();
-           if ($elementName == "TransitResponse") {
-               $transitResponse = $root->getElementsByName("TransitResponse");
-               $serviceSummary = $transitResponse['0']->getElementsByName("ServiceSummary");
+           if ($elementName == 'TransitResponse') {
+               $transitResponse = $root->getElementsByName('TransitResponse');
+               $serviceSummary = $transitResponse['0']->getElementsByName('ServiceSummary');
                $this->numberServices = count($serviceSummary);
                for ($s = 0; $s < $this->numberServices; $s++) {
                     // index by Desc because that's all we can relate back to the service with
                     // (though it can probably return the code as well..)
-                    $serviceDesc = $serviceSummary[$s]->getValueByPath("Service/Description");
-                    $transitTime[$serviceDesc]["days"] = $serviceSummary[$s]->getValueByPath("EstimatedArrival/BusinessTransitDays");
-                    $transitTime[$serviceDesc]["date"] = $serviceSummary[$s]->getValueByPath("EstimatedArrival/Date");
-                    $transitTime[$serviceDesc]["guaranteed"] = $serviceSummary[$s]->getValueByPath("Guaranteed/Code");
+                    $serviceDesc = str_replace('UPS ', '', $serviceSummary[$s]->getValueByPath('Service/Description'));
+                    $transitTime[$serviceDesc]['days'] = $serviceSummary[$s]->getValueByPath('EstimatedArrival/BusinessTransitDays');
+                    $transitTime[$serviceDesc]['date'] = $serviceSummary[$s]->getValueByPath('EstimatedArrival/Date');
+                    $transitTime[$serviceDesc]['guaranteed'] = $serviceSummary[$s]->getValueByPath('Guaranteed/Code');
                 }
             }
         }
         
         $include_spacer = true;
         foreach ($transitTime as $desc => $time) {
-            $this->debugLog("Business Transit: $desc = " . $time["date"], $include_spacer);
+            $this->debugLog("Business Transit: $desc = " . $time['date'], $include_spacer);
             $include_spacer = false;
         }
 
@@ -1087,10 +1103,10 @@ class upsxml
 }
 
 //******************************
-function ready_to_shipCmp( $a, $b) {
-    if ( $a['ready_to_ship'] == $b['ready_to_ship'] )
-    return 0;
-    if ( $a['ready_to_ship'] > $b['ready_to_ship'] )
-    return -1;
-    return 1;
+function ready_to_shipCmp($a, $b) 
+{
+    if ($a['ready_to_ship'] == $b['ready_to_ship']) {
+        return 0;
+    }
+    return ($a['ready_to_ship'] > $b['ready_to_ship']) ? -1 : 1;
 }

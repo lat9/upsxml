@@ -1,6 +1,6 @@
 <?php
 /*
- * UPS XML v1.7.3
+ * UPS XML v1.7.9
     $Id: upsxml.php,v 1.1.2 2004/11/27 01:03:03 torinwalker Exp $
     Written by Torin Walker
     torinwalker@rogers.com
@@ -92,6 +92,7 @@ define('MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_11', 'UPS Standard');
 define('MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54', 'UPS Worldwide Express Plus');
 define('MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_65', 'UPS Worldwide Saver');
 
-define('SHIPPING_DAYS_DELAY', 'Shipping Delay');
+define('MODULE_SHIPPING_UPSXML_ETA_TEXT', 'ETA: ');     //-Identifies the Estimated Time of Arrival, when transit-time is to be displayed.
+define('MODULE_SHIPPING_UPSXML_ETA_FORMAT', 'F d, Y');  //-Defines the format in which the ETA's date is formatted.  See https://www.php.net/manual/en/datetime.format.php for more information.
 
 define('MODULE_SHIPPING_UPSXML_INVALID_CURRENCY_CODE', 'Unknown currency code specified (%s), using store default (' . DEFAULT_CURRENCY . ').');
