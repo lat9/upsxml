@@ -25,7 +25,7 @@ img { margin-left: 20px; max-width: 95%; }
 
 <body>
 <h1>UPSXML Shipping Module for Zen Cart 1.5.3 and later</h1>
-<h3>Version 1.7.9, by lat9</h3>
+<h3>Version 1.7.10, by lat9</h3>
 <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
 
 <h4>Contributers and Copyrights</h4>
@@ -34,7 +34,7 @@ img { margin-left: 20px; max-width: 95%; }
     <li>Insurance Support 2005 Joe McFrederick, jomcfred@oldeparsonage.com</li>
     <li>Modified for zen-cart 1.2.5d by Dennis Sayer - July 9, 2005, dennis.s.sayer@brandnamebatteries.com</li>
     <li>Updated for zen-cart 1.5.1 by Brian Gundlach - June 10, 2014, Brian@gundlach-marketing.com</li>
-    <li>Copyright (C) 2017-2020, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
+    <li>Copyright (C) 2017-2022, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
 </ul>
 
 <hr />
@@ -111,6 +111,13 @@ most necessary features offered by the UPS Rates and Services system. The module
 <hr />
 <h2>Version History</h2>
 <ul>
+  <li>1.7.10, 2022-05-17 (lat9)<ul>
+    <li>BUGFIX: Correct PHP 8.0+ Fatal error; XMLParse class now included in PHP base.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/classes/xmldocument.php.</li>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
   <li>1.7.9, 2020-07-29 (lat9)<ul>
     <li>BUGFIX: Time-in-transit missing if shipping-method name is translated.</li>
     <li>The following files were changed:<ol>

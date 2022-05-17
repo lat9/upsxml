@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.9
+ * UPS XML v1.7.10
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -34,16 +34,22 @@
 */
 require DIR_FS_CATALOG . 'includes/classes/xmldocument.php';
 
-// if using the optional dimensional support, set to 1, otherwise leave as 0
+// if using the optional dimensional support, set to 1, otherwise leave as 0 (no quotes!)
 define('DIMENSIONS_SUPPORTED', 0);
 
-class upsxml 
+class upsxml
 {
-    public $code, $title, $description, $icon, $enabled, $types;
-    public $moduleVersion = '1.7.9';
+    public
+        $code,
+        $title,
+        $description,
+        $icon, $enabled,
+        $types;
+    public
+        $moduleVersion = '1.7.10';
 
     //***************
-    function __construct() 
+    function __construct()
     {
         global $db, $order;
         $this->code = 'upsxml';
@@ -53,14 +59,14 @@ class upsxml
         }
         $this->description = MODULE_SHIPPING_UPSXML_RATES_TEXT_DESCRIPTION;
 
-        if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && basename($GLOBALS['PHP_SELF'], '.php') == FILENAME_MODULES) {
+        if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && basename($GLOBALS['PHP_SELF'], '.php') === FILENAME_MODULES) {
             $new_version_details = plugin_version_check_for_updates(126, $this->moduleVersion);
             if ($new_version_details !== false) {
                 $this->title .= '<span class="alert">' . ' - NOTE: A NEW VERSION OF THIS PLUGIN IS AVAILABLE. <a href="' . $new_version_details['link'] . '" target="_blank">[Details]</a>' . '</span>';
             }
         }
-        
-        $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS == 'True');
+
+        $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS === 'True');
         $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : null;
         if ($this->sort_order === null) {
             return false;
@@ -95,7 +101,7 @@ class upsxml
 
             $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
             $this->protocol = 'https';
-            $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE == 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
+            $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE === 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
             $this->port = '443';
             $this->path = '/ups.app/xml/Rate';
             $this->transitpath = '/ups.app/xml/TimeInTransit';
@@ -107,13 +113,13 @@ class upsxml
             $this->items_qty = 0;
             $this->timeintransit = '0';
             $this->today = date('Ymd');
-            
+
             // -----
             // Since the time-in-transit and rate services use different codes to identify the
             // associated shipping-method, but the same service-names, we'll include a table to
             // provide that association.
             //
-            $this->upsxml_value_mapping = array(
+            $this->upsxml_value_mapping = [
                 'Next Day Air' => '01',
                 '2nd Day Air' => '02',
                 'Ground' => '03',
@@ -126,11 +132,11 @@ class upsxml
                 'Worldwide Express Plus' => '54',
                 '2nd Day Air A.M.' => '59',
                 'Worldwide Saver' => '65',
-            );
+            ];
 
             // insurance addition
             $this->pkgvalue = 0;
-            if (MODULE_SHIPPING_UPSXML_INSURE == 'True') {
+            if (MODULE_SHIPPING_UPSXML_INSURE === 'True') {
                 if (isset($order->info['subtotal'])) {
                     $this->pkgvalue = ceil($order->info['subtotal']);
                 } elseif (isset($_SESSION['cart']->total)) {
@@ -138,11 +144,11 @@ class upsxml
                 }
             }
             // end insurance addition
-            
-            $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG == 'true');
+
+            $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG === 'true');
             $this->logfile = DIR_FS_LOGS . '/upsxml-' . date('Ymd') . '.log';
         }
-        
+
         // -----
         // Provide various configuration fix-ups during admin configuration.
         //
@@ -150,14 +156,14 @@ class upsxml
             // -----
             // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
             //
-            $GLOBALS['db']->Execute(
+            $db->Execute(
                 "UPDATE " . TABLE_CONFIGURATION . "
                     SET configuration_value = REPLACE(configuration_value, 'Next Day Air Early A.M.', 'Next Day Air Early'),
                         set_function = REPLACE(set_function, 'Next Day Air Early A.M.', 'Next Day Air Early')
                   WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
                   LIMIT 1"
             );
-            
+
             // -----
             // v1.7.8: The 'serviceCode' values are now parenthetically suffixed to their respective
             // names, enabling multi-language configuration.
@@ -207,17 +213,17 @@ class upsxml
         }
 
         // Available pickup types - set in admin
-        $this->pickup_methods = array(
+        $this->pickup_methods = [
             'Daily Pickup' => '01',
             'Customer Counter' => '03',
             'One Time Pickup' => '06',
             'On Call Air Pickup' => '07',
             'Letter Center' => '09',
             'Air Service Center' => '10'
-        );
+        ];
 
         // Available package types
-        $this->package_types = array(
+        $this->package_types = [
             'Unknown' => '00',
             'UPS Letter' => '01',
             'Customer Package' => '02',
@@ -226,7 +232,7 @@ class upsxml
             'UPS Express Box' => '21',
             'UPS 25kg Box' => '24',
             'UPS 10kg Box' => '25'
-        );
+        ];
 
         // -----
         // Human-readable Service Code lookup table. The values returned by the Rates and Service "shop" method are numeric.
@@ -236,9 +242,9 @@ class upsxml
         // 1) The origin specified in the admin configuration affects only the product name as displayed to the user.
         // 2) These code-to-name correlations were last verified with the "UPS Rating Package XML Developer Guide" dated 2019-01-07.
         //
-        $this->service_codes = array(
+        $this->service_codes = [
             // US Origin
-            'US Origin' => array(
+            'US Origin' => [
                 '01' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_01,
                 '02' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_02,
                 '03' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_03,
@@ -251,9 +257,9 @@ class upsxml
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_54,
                 '59' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_59,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_US_ORIGIN_65
-            ),
+            ],
             // Canada Origin
-            'Canada Origin' => array(
+            'Canada Origin' => [
                 '01' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_01,
                 '02' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_02,
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_07,
@@ -264,17 +270,17 @@ class upsxml
                 '14' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_14,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_CANADA_ORIGIN_65
-            ),
+            ],
             // European Union Origin
-            'European Union Origin' => array(
+            'European Union Origin' => [
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_08,
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_11,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_EU_ORIGIN_65
-            ),
+            ],
             // Puerto Rico Origin
-            'Puerto Rico Origin' => array(
+            'Puerto Rico Origin' => [
                 '01' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_01,
                 '02' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_02,
                 '03' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_03,
@@ -283,24 +289,24 @@ class upsxml
                 '14' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_14,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_PR_ORIGIN_65
-            ),
+            ],
             // Mexico Origin
-            'Mexico Origin' => array(
+            'Mexico Origin' => [
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_08,
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_11,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_MEXICO_ORIGIN_65
-            ),
+            ],
             // All other origins
-            'All other origins' => array(
+            'All other origins' => [
                 '07' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_07,
                 '08' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_08,
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_11,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_65
-            )
-        );
+            ]
+        ];
     }
 
     // ----
@@ -327,9 +333,10 @@ class upsxml
     }
 
     // class methods
-    public function quote($method = '') 
+    public function quote($method = '')
     {
         global $order, $shipping_weight, $shipping_num_boxes, $total_weight;
+
         $state = zen_get_zone_code($order->delivery['country']['id'], $order->delivery['zone_id'], '');
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
         
@@ -343,7 +350,7 @@ class upsxml
         if (!defined('MODULE_SHIPPING_UPSXML_ETA_TEXT')) {
             define('MODULE_SHIPPING_UPSXML_ETA_TEXT', 'ETA: ');
         }
-        
+
         // -----
         // When rates are requested from the shipping-estimator, the city isn't set and the postcode might not be.  Provide
         // defaults for the request.
@@ -352,7 +359,7 @@ class upsxml
         $dest_postcode = (!empty($order->delivery['postcode'])) ? $order->delivery['postcode'] : '';
         $this->_upsDest($dest_city, $state, $order->delivery['country']['iso_code_2'], $dest_postcode);
 
-        if (DIMENSIONS_SUPPORTED) {
+        if (DIMENSIONS_SUPPORTED === 1) {
             $productsArray = $_SESSION['cart']->get_products();
             // sort $productsArray according to ready-to-ship (first) and not-ready-to-ship (last)
             usort($productsArray, ready_to_shipCmp);
@@ -376,7 +383,7 @@ class upsxml
             $this->debugLog(
                 "Shipping weight: $shipping_weight" . PHP_EOL .
                 "Shipping Num Boxes: $shipping_num_boxes" . PHP_EOL .
-                "this: " . var_export($this, true),
+                "this: " . print_r($this, true),
                 true
             );
             // EOF Time In Transit
@@ -386,16 +393,16 @@ class upsxml
         if (is_array($upsQuote) && count($upsQuote) > 0) {
             $weight_info = '';
             if ($this->displayWeight) {
-                if (DIMENSIONS_SUPPORTED) {
+                if (DIMENSIONS_SUPPORTED === 1) {
                     $weight_info = ' (' . $this->boxCount . ($this->boxCount > 1 ? ' pkg(s), ' : ' pkg, ') . $totalWeight . ' ' . strtolower($this->unit_weight) . ' total)';
                 } else {
                     $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight, 2) . ' ' . strtolower($this->unit_weight) . ' total)';
                 }
             }
-            $this->quotes = array(
+            $this->quotes = [
                 'id' => $this->code,
                 'module' => $this->title . $weight_info
-            );
+            ];
 
             // -----
             // These two arrays aid in 'connecting' the identified rates to their time-in-transit, aka ETA date.  The
@@ -405,7 +412,7 @@ class upsxml
             $codes_to_services = array_flip($this->upsxml_value_mapping);
             $methods_to_codes = array_flip($this->service_codes[$this->origin]);
             
-            $methods = array();
+            $methods = [];
             foreach ($upsQuote as $serviceCode => $quote_info) {
                 $type = $quote_info['title'];
                 $cost = $quote_info['cost'];
@@ -414,7 +421,7 @@ class upsxml
                     continue;
                 }
 
-                if ($method == '' || $method == $type) {
+                if ($method === '' || $method === $type) {
                     $_type = $type;
                     if ($this->displayTransitTime && isset($methods_to_codes[$type])) {
                         $method_code = $methods_to_codes[$type];
@@ -425,28 +432,28 @@ class upsxml
                         }
                     }
 
-                    $methods[] = array(
+                    $methods[] = [
                         'id' => $type, 
                         'title' => $_type, 
                         'cost' => ($this->handling_fee + $cost)
-                    );
+                    ];
                 }
             }
 
             if ($this->tax_class > 0) {
                 $this->quotes['tax'] = zen_get_tax_rate($this->tax_class, $order->delivery['country']['id'], $order->delivery['zone_id']);
             }
-            
+
             // -----
             // Sort the shipping methods to be returned in ascending order of cost.
             //
             usort($methods, function($a, $b) {
-                if ($a['cost'] == $b['cost']) {
+                if ($a['cost'] === $b['cost']) {
                     return 0;
                 }
                 return ($a['cost'] < $b['cost']) ? -1 : 1;
             });
-            
+
             $this->quotes['methods'] = $methods;
         } else {
             if (!empty($upsQuote)) {
@@ -455,7 +462,10 @@ class upsxml
                 $errmsg = MODULE_SHIPPING_UPSXML_RATES_TEXT_UNKNOWN_ERROR;
             }
             $errmsg .= '<br>' . MODULE_SHIPPING_UPSXML_RATES_TEXT_IF_YOU_PREFER . ' ' . STORE_NAME . ' via <a href="mailto:' . STORE_OWNER_EMAIL_ADDRESS . '"><u>Email</u></a>.';
-            $this->quotes = array('module' => $this->title, 'error' => $errmsg);
+            $this->quotes = [
+                'module' => $this->title,
+                'error' => $errmsg
+            ];
         }
         if (!empty($this->icon)) {
             $this->quotes['icon'] = zen_image($this->icon, $this->title);
@@ -464,10 +474,12 @@ class upsxml
     }
 
     //**************
-    public function check() 
+    public function check()
     {
+        global $db;
+
         if (!isset($this->_check)) {
-            $check_query = $GLOBALS['db']->Execute(
+            $check_query = $db->Execute(
                 "SELECT configuration_value 
                    FROM " . TABLE_CONFIGURATION . " 
                   WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_RATES_STATUS'
@@ -481,78 +493,81 @@ class upsxml
     //**************
     public function install() 
     {
-        $GLOBALS['db']->Execute(
+        global $db;
+        $db->Execute(
             "INSERT INTO " . TABLE_CONFIGURATION . "
                 (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added)
              VALUES
                 ('Enable UPS Shipping', 'MODULE_SHIPPING_UPSXML_RATES_STATUS', 'True', 'Do you want to offer UPS shipping?', 6, 0, NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
-                
+
                 ('UPS Rates Access Key', 'MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY', '', 'Enter the XML rates access key assigned to you by UPS; see https://www.ups.com/upsdeveloperkit/requestaccesskey ', 6, 1, NULL, NULL, now()),
-                
+
                 ('UPS Rates Username', 'MODULE_SHIPPING_UPSXML_RATES_USERNAME', '', 'Enter your UPS Services account username.', 6, 2, NULL, NULL, now()),
-                
+
                 ('UPS Rates Password', 'MODULE_SHIPPING_UPSXML_RATES_PASSWORD', '', 'Enter your UPS Services account password.', 6, 3, NULL, NULL, now()),
-                
+
                 ('UPS Rates &quot;Shipper Number&quot;', 'MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER', '', 'Enter your UPS Services <em>Shipper Number</em>, if you want to receive your account\'s negotiated rates!.', 6, 3, NULL, NULL, now()),
-                
+
                 ('UPS XML Display Options', 'MODULE_SHIPPING_UPSXML_OPTIONS', '--none--', 'Select from the following the UPS options.', 6, 16, NULL, 'zen_cfg_select_multioption(array(\'Display weight\', \'Display transit time\'), ',  now()),
-                
+
                 ('Enable debug?', 'MODULE_SHIPPING_UPSXML_DEBUG', 'false', 'Enable the shipping-module\'s debug and the file /logs/upsxml.log will be updated each time a quote is requested.', 6, 16, NULL, 'zen_cfg_select_option(array(\'true\', \'false\'), ',  now()),
-                
+ 
                 ('Pickup Method', 'MODULE_SHIPPING_UPSXML_RATES_PICKUP_METHOD', 'Daily Pickup', 'How do you give packages to UPS?', 6, 4, NULL, 'zen_cfg_select_option(array(\'Daily Pickup\', \'Customer Counter\', \'One Time Pickup\', \'On Call Air Pickup\', \'Letter Center\', \'Air Service Center\'), ', now()),
-                
+
                 ('Packaging Type', 'MODULE_SHIPPING_UPSXML_RATES_PACKAGE_TYPE', 'Customer Package', 'What kind of packaging do you use?', 6, 5, NULL, 'zen_cfg_select_option(array(\'Customer Package\', \'UPS Letter\', \'UPS Tube\', \'UPS Pak\', \'UPS Express Box\', \'UPS 25kg Box\', \'UPS 10kg box\'), ', now()),
-                
+
                 ('Customer Classification Code', 'MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE', '01', '00 - Account Rates, 01 - If you are billing to a UPS account and have a daily UPS pickup, 04 - If you are shipping from a retail outlet, 53 - Standard Rates', 6, 6, NULL, NULL, now()),
-                
+
                 ('Shipping Origin', 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN', 'US Origin', 'What origin point should be used (this setting affects only what UPS product names are shown to the user)', 6, 7, NULL, 'zen_cfg_select_option(array(\'US Origin\', \'Canada Origin\', \'European Union Origin\', \'Puerto Rico Origin\', \'Mexico Origin\', \'All other origins\'), ', now()),
-                
+
                 ('Origin City', 'MODULE_SHIPPING_UPSXML_RATES_CITY', '', 'Enter the name of the origin city.', 6, 8, NULL, NULL, now()),
-                
+
                 ('Origin State/Province', 'MODULE_SHIPPING_UPSXML_RATES_STATEPROV', '', 'Enter the two-letter code for your origin state/province.', 6, 9, NULL, NULL, now()),
-                
+
                 ('Origin Country', 'MODULE_SHIPPING_UPSXML_RATES_COUNTRY', '', 'Enter the two-letter code for your origin country.', 6, 10, NULL, NULL, now()),
-                
+
                 ('Origin Zip/Postal Code', 'MODULE_SHIPPING_UPSXML_RATES_POSTALCODE', '', 'Enter your origin zip/postalcode.', 6, 11, NULL, NULL, now()),
-                
+
                 ('Test or Production Mode', 'MODULE_SHIPPING_UPSXML_RATES_MODE', 'Test', 'Use this module in Test or Production mode?', 6, 12, NULL, 'zen_cfg_select_option(array(\'Test\', \'Production\'), ', now()),
-                
+
                 ('Unit Weight', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_WEIGHT', 'LBS', 'By what unit are your packages weighed?', 6, 13, NULL, 'zen_cfg_select_option(array(\'LBS\', \'KGS\'), ', now()),
-                
+
                 ('Unit Length', 'MODULE_SHIPPING_UPSXML_RATES_UNIT_LENGTH', 'IN', 'By what unit are your packages sized?', 6, 14, NULL, 'zen_cfg_select_option(array(\'IN\', \'CM\'), ', now()),
-                
+
                 ('Quote Type', 'MODULE_SHIPPING_UPSXML_RATES_QUOTE_TYPE', 'Commercial', 'Quote for Residential or Commercial Delivery', 6, 15, NULL, 'zen_cfg_select_option(array(\'Commercial\', \'Residential\'), ', now()),
-                
+
                 ('Handling Fee', 'MODULE_SHIPPING_UPSXML_RATES_HANDLING', '0', 'Handling fee for this shipping method.', 6, 16, NULL, NULL, now()),
-                
+
                 ('UPS Currency Code', 'MODULE_SHIPPING_UPSXML_CURRENCY_CODE', '" . DEFAULT_CURRENCY . "', 'Enter the 3 letter currency code for your country of origin. United States (USD)', 6, 2, NULL, NULL, now()),
-                
+
                 ('Enable Insurance', 'MODULE_SHIPPING_UPSXML_INSURE', 'True', 'Do you want to insure packages shipped by UPS?', 6, 0, NULL, 'zen_cfg_select_option(array(\'True\', \'False\'), ', now()),
-                
+
                 ('Tax Class', 'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS', '0', 'Use the following tax class on the shipping fee.', 6, 17, 'zen_get_tax_class_title', 'zen_cfg_pull_down_tax_classes(', now()),
-                
+
                 ('Shipping Zone', 'MODULE_SHIPPING_UPSXML_RATES_ZONE', '0', 'If a zone is selected, only enable this shipping method for that zone.', 6, 18, 'zen_get_zone_class_title', 'zen_cfg_pull_down_zone_classes(', now()),
-                
+
                 ('Sort order of display.', 'MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', 6, 19, NULL, NULL, now()),
-                
+
                 ('Shipping Methods', 'MODULE_SHIPPING_UPSXML_TYPES', 'Next Day Air [01], 2nd Day Air [02], Ground [03], Worldwide Express [07], Standard [11], 3 Day Select [12]', 'Select the UPS services to be offered.', 6, 20, NULL, 'zen_cfg_select_multioption(array(\'Next Day Air [01]\', \'2nd Day Air [02]\', \'Ground [03]\', \'Worldwide Express [07]\', \'Worldwide Expedited [08]\', \'Standard [11]\', \'3 Day Select [12]\', \'Next Day Air Saver [13]\', \'Next Day Air Early [14]\', \'Worldwide Express Plus [54]\', \'2nd Day Air A.M. [59]\', \'Express Saver [65]\'), ', now()),
-                
+
                 ('Shipping Delay', 'SHIPPING_DAYS_DELAY', '1', 'How many days from when an order is placed to when you ship it (Decimals are allowed). Arrival date estimations are based on this value.', 6, 7, NULL, NULL, now())"
         );
     }
 
     //****************
-    function remove() 
+    function remove()
     {
-        $GLOBALS['db']->Execute(
+        global $db;
+        $db->Execute(
             "DELETE FROM " . TABLE_CONFIGURATION . " 
               WHERE configuration_key IN ('" . implode("', '", $this->keys()) . "')"
         );
     }
+
     //*************
-    function keys() 
+    function keys()
     {
-        return array(
+        return [
             'MODULE_SHIPPING_UPSXML_RATES_STATUS',
             'MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS',
             'MODULE_SHIPPING_UPSXML_RATES_ZONE',
@@ -580,7 +595,7 @@ class upsxml
             'MODULE_SHIPPING_UPSXML_OPTIONS',
             'MODULE_SHIPPING_UPSXML_DEBUG',
             'MODULE_SHIPPING_UPSXML_RATES_MODE',
-        );
+        ];
     }
 
     //***********************
@@ -596,28 +611,28 @@ class upsxml
         $this->_upsOriginStateProv = $stateprov;
         $this->_upsOriginCountryCode = $country;
         $postal = str_replace(' ', '', $postal);
-        $this->_upsOriginPostalCode = ($country == 'US') ? substr($postal, 0, 5) : $postal;
+        $this->_upsOriginPostalCode = ($country === 'US') ? substr($postal, 0, 5) : $postal;
     }
 
     //**********************************************
-    protected function _upsDest($city, $stateprov, $country, $postal) 
+    protected function _upsDest($city, $stateprov, $country, $postal)
     {
         $this->_upsDestCity = $city;
         $this->_upsDestStateProv = $stateprov;
         $this->_upsDestCountryCode = $country;
         $postal = str_replace(' ', '', $postal);
-        $this->_upsDestPostalCode = ($country == 'US') ? substr($postal, 0, 5) : $postal;
+        $this->_upsDestPostalCode = ($country === 'US') ? substr($postal, 0, 5) : $postal;
     }
 
     //************************
-    protected function _upsAction($action) 
+    protected function _upsAction($action)
     {
         // rate - Single Quote; shop - All Available Quotes
         $this->_upsActionCode = $action;
     }
 
     //********************************************
-    protected function _addItem($length, $width, $height, $weight) 
+    protected function _addItem($length, $width, $height, $weight)
     {
         // Add box or item to shipment list. Round weights to 1 decimal places.
         if ((float)$weight < 1.0) {
@@ -634,29 +649,31 @@ class upsxml
     }
 
     //********************
-    protected function getPackages() 
+    protected function getPackages()
     {
         global $db;
-        $packages = array();
-        $result = $db->Execute("select * from " . TABLE_PACKAGING . " order by package_cost;");
+
+        $packages = [];
+        $result = $db->Execute("SELECT * FROM " . TABLE_PACKAGING . " ORDER BY package_cost;");
         while (!$result->EOF) {
-            $packages[] = array(
-            'id' => $result->fields['package_id'],
-            'name' => $result->fields['package_name'],
-            'description' => $result->fields['package_description'],
-            'length' => $result->fields['package_length'],
-            'width' => $result->fields['package_width'],
-            'height' => $result->fields['package_height'],
-            'empty_weight' => $result->fields['package_empty_weight'],
-            'max_weight' => $result->fields['package_max_weight'],
-            'cost' => $result->fields['package_cost']);
+            $packages[] = [
+                'id' => $result->fields['package_id'],
+                'name' => $result->fields['package_name'],
+                'description' => $result->fields['package_description'],
+                'length' => $result->fields['package_length'],
+                'width' => $result->fields['package_width'],
+                'height' => $result->fields['package_height'],
+                'empty_weight' => $result->fields['package_empty_weight'],
+                'max_weight' => $result->fields['package_max_weight'],
+                'cost' => $result->fields['package_cost']
+            ];
             $result->MoveNext();
         }
         return $packages;
     }
 
     //********************************
-    protected function packProducts($productsArray) 
+    protected function packProducts($productsArray)
     {
         // A very simple box packing algorithm. Given a list of packages, returns an array of boxes.
         // This algorithm is trivial. It works on the premise that you have selected boxes that fit your products, and that their volumes are resonable multiples
@@ -671,18 +688,18 @@ class upsxml
         // be cases where it is cheaper to send two small packages rather than one larger one. In that case, you'll need a better algorithm.
         // Get the available packages and "prepare" empty boxes with weight and remaining volume counters. (Take existing box and add 'remaining_volume' and 'current_weight';
         $definedPackages = $this->getPackages();
-        $emptyBoxesArray = array();
-        for ($i = 0; $i < count($definedPackages); $i++) {
+        $emptyBoxesArray = [];
+        for ($i = 0, $n = count($definedPackages); $i < $n; $i++) {
             $definedBox = $definedPackages[$i];
             $definedBox['remaining_volume'] = $definedBox['length'] * $definedBox['width'] * $definedBox['height'];
             $definedBox['current_weight'] = $definedBox['empty_weight'];
             $emptyBoxesArray[] = $definedBox;
         }
-        $packedBoxesArray = array();
-        $currentBox = NULL;
+        $packedBoxesArray = [];
+        $currentBox = null;
         // Get the product array and expand multiple qty items.
-        $productsRemaining = array();
-        for ($i = 0; $i < count($productsArray); $i++) {
+        $productsRemaining = [];
+        for ($i = 0, $n = count($productsArray); $i < $n; $i++) {
             $product = $productsArray[$i];
             for ($j = 0; $j < $productsArray[$i]['quantity']; $j++) {
                 $productsRemaining[] = $product;
@@ -700,25 +717,25 @@ class upsxml
                 $productsRemaining = array_slice($productsRemaining, 1);
                 continue;
             }
-            //Cylcle through boxes, increasing box size if all doesn't fit.
+            //Cycle through boxes, increasing box size if all doesn't fit.
             if (count($emptyBoxesArray) == 0) {
                 print_r("ERROR: No boxes to ship unpackaged product<br>");
                 break;
             }
-            for ($b = 0; $b < count($emptyBoxesArray); $b++) {
+            for ($b = 0, $c = count($emptyBoxesArray); $b < $c; $b++) {
                 $currentBox = $emptyBoxesArray[$b];
                 //Try to fit each product in box
                 for ($p = 0; $p < count($productsRemaining); $p++) {
                     if ($this->fitsInBox($productsRemaining[$p], $currentBox)) {
                         //It fits. Put it in the box.
                         $currentBox = $this->putProductInBox($productsRemaining[$p], $currentBox);
-                        if ($p == count($productsRemaining) - 1) {
+                        if ($p === count($productsRemaining) - 1) {
                             $packedBoxesArray[] = $currentBox;
                             $productsRemaining = array_slice($productsRemaining, $p + 1);
                             break 2;
                         }
                     } else {
-                        if ($b == count($emptyBoxesArray) - 1) {
+                        if ($b === count($emptyBoxesArray) - 1) {
                             //We're at the largest box already, and it's full. Keep what we've packed so far and get another box.
                             $packedBoxesArray[] = $currentBox;
                             $productsRemaining = array_slice($productsRemaining, $p + 1);
@@ -734,7 +751,7 @@ class upsxml
     }
 
     //*****************************
-    protected function fitsInBox($product, $box) 
+    protected function fitsInBox($product, $box)
     {
         $productVolume = $product['length'] * $product['width'] * $product['height'];
         if ($productVolume <= $box['remaining_volume']) {
@@ -746,7 +763,7 @@ class upsxml
     }
 
     //***********************************
-    protected function putProductInBox($product, $box) 
+    protected function putProductInBox($product, $box)
     {
         $productVolume = $product['length'] * $product['width'] * $product['height'];
         $box['remaining_volume'] -= $productVolume;
@@ -756,7 +773,7 @@ class upsxml
     }
 
     //*********************
-    protected function _upsGetQuote() 
+    protected function _upsGetQuote()
     {
         // Create the access request
         $accessRequestHeader =
@@ -801,15 +818,14 @@ class upsxml
         ($this->quote_type == "Residential" ? "<ResidentialAddressIndicator/>\n" : "") .
         "           </Address>\n".
         "       </ShipTo>\n";
-        for ($i = 0, $ratingServiceSelectionRequestPackageContent = ''; $i < $this->items_qty; $i++) {
 
+        for ($i = 0, $ratingServiceSelectionRequestPackageContent = ''; $i < $this->items_qty; $i++) {
             $ratingServiceSelectionRequestPackageContent .=
             "       <Package>\n".
             "           <PackagingType>\n".
             "               <Code>". $this->package_types[$this->package_type] ."</Code>\n".
             "           </PackagingType>\n";
-            if (DIMENSIONS_SUPPORTED) {
-
+            if (DIMENSIONS_SUPPORTED === 1) {
                 $ratingServiceSelectionRequestPackageContent .=
                 "           <Dimensions>\n".
                 "               <UnitOfMeasurement>\n".
@@ -864,7 +880,7 @@ class upsxml
     }
 
     //******************************************************************
-    protected function _post($protocol, $host, $port, $path, $version, $timeout, $xmlRequest) 
+    protected function _post($protocol, $host, $port, $path, $version, $timeout, $xmlRequest)
     {
         $url = $protocol . "://" . $host . ":" . $port . $path;
         $this->debugLog("Date and Time: " . date('Y-m-d H:i:s') . PHP_EOL . "UPS URL: $url", true);
@@ -903,11 +919,11 @@ class upsxml
     }
 
     //*****************************
-    protected function _parseResult($xmlResult) 
+    protected function _parseResult($xmlResult)
     {
         // Parse XML message returned by the UPS post server.
-        $doc = new XMLDocument();
-        $xp = new XMLParser();
+        $doc = new upsXMLDocument();
+        $xp = new upsXMLParser();
         $xp->setDocument($doc);
         $xp->parse($xmlResult);
         $doc = $xp->getDocument();
@@ -928,7 +944,7 @@ class upsxml
         $root = $doc->getRoot();
         $ratedShipments = $root->getElementsByName("RatedShipment");
         $aryProducts = false;
-        for ($i = 0; $i < count($ratedShipments); $i++) {
+        for ($i = 0, $n = count($ratedShipments); $i < $n; $i++) {
             $serviceCode = $ratedShipments[$i]->getValueByPath("/Service/Code");
             $totalCharge = false;
             if ($this->upsShipperNumber != '') {
@@ -947,12 +963,12 @@ class upsxml
             $title = $this->service_codes[$this->origin][$serviceCode];
 
             if ($aryProducts === false) {
-                $aryProducts = array();
+                $aryProducts = [];
             }
-            $aryProducts[$serviceCode] = array(
+            $aryProducts[$serviceCode] = [
                 'title' => $title,
                 'cost' => $totalCharge
-            );
+            ];
         }
         return $aryProducts;
     }
@@ -962,7 +978,7 @@ class upsxml
     // GM 11-15-2004: renamed from _upsGetTime()
 
     //********************
-    protected function _upsGetTimeServices() 
+    protected function _upsGetTimeServices()
     {
         if (defined('SHIPPING_DAYS_DELAY')) {
              $shipdate = date('Ymd', time() + (86400 * SHIPPING_DAYS_DELAY));
@@ -1033,10 +1049,10 @@ class upsxml
 
     protected function _transitparseResult($xmlTransitResult) 
     {
-       $transitTime = array();
+       $transitTime = [];
        // Parse XML message returned by the UPS post server.
-       $doc = new XMLDocument();
-       $xp = new XMLParser();
+       $doc = new upsXMLDocument();
+       $xp = new upsXMLParser();
        $xp->setDocument($doc);
        $xp->parse($xmlTransitResult);
        $doc = $xp->getDocument();
@@ -1056,7 +1072,7 @@ class upsxml
        }
        $root = $doc->getRoot();
        $rootChildren = $root->getChildren();
-       for ($r = 0; $r < count($rootChildren); $r++) {
+       for ($r = 0, $c = count($rootChildren); $r < $c; $r++) {
            $elementName = $rootChildren[$r]->getName();
            if ($elementName == 'TransitResponse') {
                $transitResponse = $root->getElementsByName('TransitResponse');
@@ -1082,11 +1098,11 @@ class upsxml
         return $transitTime;
     }
     //EOF Time In Transit
-    
+
     // -----
     // This method checks to see if the UPS shipping 'serviceCode' is one that the store has configured.
     //
-    protected function excludeChoices($serviceCode) 
+    protected function excludeChoices($serviceCode)
     {
         return (strpos(MODULE_SHIPPING_UPSXML_TYPES, " [$serviceCode]") === false);
     }
@@ -1103,9 +1119,9 @@ class upsxml
 }
 
 //******************************
-function ready_to_shipCmp($a, $b) 
+function ready_to_shipCmp($a, $b)
 {
-    if ($a['ready_to_ship'] == $b['ready_to_ship']) {
+    if ($a['ready_to_ship'] === $b['ready_to_ship']) {
         return 0;
     }
     return ($a['ready_to_ship'] > $b['ready_to_ship']) ? -1 : 1;

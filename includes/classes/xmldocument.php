@@ -1,5 +1,6 @@
 <?php
 /*
+ * UPS XML v1.7.10
     $Id: xmldocument.php,v 1.5 2003/06/27 01:03:03 torinwalker Exp $
     Written by Torin Walker
     torinwalker@rogers.com
@@ -21,51 +22,51 @@
     59 Temple Place, Suite 330,
     Boston, MA 02111-1307 USA
 */
-
-define("ELEMENT", 0);
-define("TEXTELEMENT", 1);
+define('ELEMENT', 0);
+define('TEXTELEMENT', 1);
 
 //*****************
-class XMLDocument 
+class upsXMLDocument
 {
     protected $root,
               $children;
 
-    public function __construct() {
+    public function __construct()
+    {
     }
 
     public function createElement($name) 
     {
-        $node = new Node();
+        $node = new upsNode();
         $node->setName($name);
         $node->setType(ELEMENT);
         return $node;
     }
 
-    public function createTextElement($text) 
+    public function createTextElement($text)
     {
-        $node = new Node();
+        $node = new upsNode();
         $node->setType(TEXTELEMENT);
         $node->setValue($text);
         return $node;
     }
 
-    public function getRoot() 
+    public function getRoot()
     {
         return (!empty($this->root)) ? $this->root : false;
     }
 
-    public function setRoot(&$node) 
+    public function setRoot(&$node)
     {
         $this->root = $node;
     }
 
-    public function toString() 
+    public function toString()
     {
         return (!empty($this->root)) ? $this->root->toString() : 'not set';
     }
 
-    public function getValueByPath($path) 
+    public function getValueByPath($path)
     {
         $pathArray = explode('/', $path);
         if ($pathArray[0] != $this->root->getName()) {
@@ -79,7 +80,7 @@ class XMLDocument
 }
 
 //**********
-class Node 
+class upsNode
 {
     protected $name,
               $type,
@@ -90,46 +91,46 @@ class Node
 
     public function __construct() 
     {
-        $this->children = array();
-        $this->attributes = array();
+        $this->children = [];
+        $this->attributes = [];
     }
 
-    public function getName() 
+    public function getName()
     {
         return $this->name;
     }
 
-    public function setName($name) 
+    public function setName($name)
     {
         $this->name = $name;
     }
 
-    public function setParent(&$node) 
+    public function setParent(&$node)
     {
         $this->parent = &$node;
     }
 
-    public function &getParent() 
+    public function &getParent()
     {
         return $this->parent;
     }
 
-    public function &getChildren() 
+    public function &getChildren()
     {
         return $this->children;
     }
 
-    public function getType() 
+    public function getType()
     {
         return $this->type;
     }
 
-    public function setType($type) 
+    public function setType($type)
     {
         $this->type = $type;
     }
 
-    public function getElementByName($name) 
+    public function getElementByName($name)
     {
         for ($i = 0, $c = count($this->children); $i < $c; $i++) {
             if ($this->children[$i]->getType() == ELEMENT) {
@@ -141,9 +142,9 @@ class Node
         return null;
     }
 
-    public function getElementsByName($name) 
+    public function getElementsByName($name)
     {
-        $elements = array();
+        $elements = [];
         for ($i = 0, $c = count($this->children); $i < $c; $i++) {
             if ($this->children[$i]->getType() == ELEMENT) {
                 if ($this->children[$i]->getName() == $name) {
@@ -154,7 +155,8 @@ class Node
         return $elements;
     }
 
-    public function getValueByPath($path) {
+    public function getValueByPath($path)
+    {
         $pathArray = explode('/', $path);
         $node = $this;
         for ($i = 0, $matches = 0, $num_segments = count($pathArray); $i < $num_segments; $i++) {
@@ -176,17 +178,17 @@ class Node
         return ($matches == $num_segments) ? $node->getValue() : false;
     } 
 
-    public function getText() 
+    public function getText()
     {
         return $this->text();
     }
 
-    public function setValue($text) 
+    public function setValue($text)
     {
         $this->text = $text;
     }
 
-    public function getValue() 
+    public function getValue()
     {
         if ($this->getType() == ELEMENT) {
             for ($i = 0, $value = '', $c = count($this->children); $i < $c; $i++) {
@@ -198,30 +200,30 @@ class Node
         return $value;
     }
 
-    public function setAttribute($name, $value) 
+    public function setAttribute($name, $value)
     {
         $this->attributes[$name] = $value;
     }
 
-    public function getAttribute($name) 
+    public function getAttribute($name)
     {
         return (isset($this->attributes[$name])) ? $this->attributes[$name] : '';
     }
 
-    public function addNode(&$node) 
+    public function addNode(&$node)
     {
         $this->children[] = &$node;
         $node->parent = &$this;
     }
 
-    public function parentToString($node) 
+    public function parentToString($node)
     {
         while ($node->parent) {
             $node = $node->parent;
         }
     }
 
-    public function toString() 
+    public function toString()
     {
         if ($this->type == ELEMENT) {
             $string = '{' . $this->name . '}';
@@ -237,25 +239,25 @@ class Node
 }
 
 //**************
-class XMLParser 
+class upsXMLParser
 {
     protected $xp,
               $document,
               $current,
               $error;
 
-    public function __construct() 
+    public function __construct()
     {
-        $this->document = new XMLDocument();
-        $this->error = array();
+        $this->document = new upsXMLDocument();
+        $this->error =[];
     }
 
-    public function setDocument($document) 
+    public function setDocument($document)
     {
         $this->document = $document;
     }
 
-    public function getDocument() 
+    public function getDocument()
     {
         return $this->document;
     }
@@ -268,19 +270,19 @@ class XMLParser
     }
 
     // return 1 for an error, 0 for no error
-    public function hasErrors() 
+    public function hasErrors()
     {
         return (!empty($this->error)) ? 1 : 0;
     }
 
     // return array of error messages
-    public function getError() 
+    public function getError()
     {
         return $this->error;
     }
 
     // process xml start tag
-    public function startElement($xp, $name, $attrs) 
+    public function startElement($xp, $name, $attrs)
     {
         $node = $this->document->createElement($name);
         if ($this->document->getRoot()) {
@@ -300,14 +302,14 @@ class XMLParser
     }
 
     // process data between xml tags
-    public function dataHandler($xp, $text) 
+    public function dataHandler($xp, $text)
     {
         $node = $this->document->createTextElement($text);
         $this->current->addNode($node);
     }
 
     // parse xml document from string
-    public function parse($xmlString) 
+    public function parse($xmlString)
     {
         $this->xp = xml_parser_create();
         if (empty($this->xp)) {
