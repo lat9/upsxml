@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.10
+ * UPS XML v1.7.11
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -46,7 +46,7 @@ class upsxml
         $icon, $enabled,
         $types;
     public
-        $moduleVersion = '1.7.10';
+        $moduleVersion = '1.7.11';
 
     //***************
     function __construct()
@@ -337,9 +337,9 @@ class upsxml
     {
         global $order, $shipping_weight, $shipping_num_boxes, $total_weight;
 
-        $state = zen_get_zone_code($order->delivery['country']['id'], $order->delivery['zone_id'], '');
+        $state = zen_get_zone_code($order->delivery['country']['id'], (int)$order->delivery['zone_id'], '');
         $this->_upsOrigin(MODULE_SHIPPING_UPSXML_RATES_CITY, MODULE_SHIPPING_UPSXML_RATES_STATEPROV, MODULE_SHIPPING_UPSXML_RATES_COUNTRY, MODULE_SHIPPING_UPSXML_RATES_POSTALCODE);
-        
+
         // -----
         // Default the language-file constants, added in v1.7.9, in case the shipping-method's language file(s) have
         // not yet been updated.
@@ -1047,7 +1047,7 @@ class upsxml
     // GM 11-15-2004: modified to return array with time for each service, as
     //                opposed to single transit time for hardcoded "GND" code
 
-    protected function _transitparseResult($xmlTransitResult) 
+    protected function _transitparseResult($xmlTransitResult)
     {
        $transitTime = [];
        // Parse XML message returned by the UPS post server.
@@ -1088,7 +1088,7 @@ class upsxml
                 }
             }
         }
-        
+
         $include_spacer = true;
         foreach ($transitTime as $desc => $time) {
             $this->debugLog("Business Transit: $desc = " . $time['date'], $include_spacer);
@@ -1106,7 +1106,7 @@ class upsxml
     {
         return (strpos(MODULE_SHIPPING_UPSXML_TYPES, " [$serviceCode]") === false);
     }
-    
+
     protected function debugLog($message, $include_spacer = false)
     {
         if ($this->debug) {

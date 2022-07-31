@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf8">
 <link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
-<title>UPSXML Shipping Module for Zen Cart 1.5.3 and later</title>
+<title>UPSXML Shipping Module for Zen Cart 1.5.6 and later</title>
 
 <style type="text/css">
 <!--
@@ -24,8 +24,8 @@ img { margin-left: 20px; max-width: 95%; }
 </head>
 
 <body>
-<h1>UPSXML Shipping Module for Zen Cart 1.5.3 and later</h1>
-<h3>Version 1.7.10, by lat9</h3>
+<h1>UPSXML Shipping Module for Zen Cart 1.5.6 and later</h1>
+<h3>Version 1.7.11, by lat9</h3>
 <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
 
 <h4>Contributers and Copyrights</h4>
@@ -37,14 +37,14 @@ img { margin-left: 20px; max-width: 95%; }
     <li>Copyright (C) 2017-2022, <a href="https://vinosdefrutastropicales.com" target="_blank">Vinos de Frutas Tropicales</a> (lat9)</li>
 </ul>
 
-<hr />
+<hr>
 <h2>Description</h2>
 <p>This module provides the eCommerce Zen Cart community with the long-awaited XML version of the UPS Rates and Services gateway. It supports multiple (storefront) languages, multiple geographic origins and implements the 
 most necessary features offered by the UPS Rates and Services system. The module connects to UPS, retrieves a list of available shipping methods and prices and presents them to the customer.</p>
 
 <p>Settings are changed in a store's Zen Cart admin interface under <b>Modules-&gt;Shipping&gt;United Parcel Service (upsxml)</b>.  The administrative interface shows shipper- (not customer-) related variables such as package type and origin in English, but customer-facing product names (the name UPS uses to describe its services, such as <em>Express Plus</em> or <em>Ground</em>) can be multi-lingual.</p>
 
-<hr />
+<hr>
 <h2>Installation</h2>
 <p>This plugin currently has no <span class="corefile">core-file overwrites</span>; you should <strong>always</strong> backup your cart's database and files prior to making any changes.</p>
 <ol>
@@ -111,6 +111,12 @@ most necessary features offered by the UPS Rates and Services system. The module
 <hr />
 <h2>Version History</h2>
 <ul>
+  <li>1.7.11, 2022-07-31 (lat9)<ul>
+    <li>BUGFIX: Correct zc158 Fatal error; zen_get_zone_code now requires parameter #2 to be an int.</li>
+    <li>The following files were changed:<ol>
+      <li>/includes/modules/shipping/upsxml.php.</li>
+    </ol></li>
+  </ul></li>
   <li>1.7.10, 2022-05-17 (lat9)<ul>
     <li>BUGFIX: Correct PHP 8.0+ Fatal error; XMLParse class now included in PHP base.</li>
     <li>The following files were changed:<ol>
