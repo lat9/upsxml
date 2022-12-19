@@ -2,8 +2,8 @@
 <html dir="ltr" lang="en">
 <head>
 <meta charset="utf8">
-<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon" />
-<title>UPSXML Shipping Module for Zen Cart 1.5.6 and later</title>
+<link rel="icon" href="../vinos_favicon.ico" type="image/x-icon">
+<title>UPSXML Shipping Module for Zen Cart 1.5.7 and later</title>
 
 <style type="text/css">
 <!--
@@ -24,8 +24,8 @@ img { margin-left: 20px; max-width: 95%; }
 </head>
 
 <body>
-<h1>UPSXML Shipping Module for Zen Cart 1.5.6 and later</h1>
-<h3>Version 1.7.11, by lat9</h3>
+<h1>UPSXML Shipping Module for Zen Cart 1.5.7 and later</h1>
+<h3>Version 1.8.0, by lat9</h3>
 <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
 
 <h4>Contributers and Copyrights</h4>
@@ -111,30 +111,36 @@ most necessary features offered by the UPS Rates and Services system. The module
 <hr />
 <h2>Version History</h2>
 <ul>
+  <li>1.8.0-beta1, 2022-12-19 (lat9)<ul>
+    <li>INTROP: Define all class variables for interoperation with PHP 8.2 and later.</li>
+    <li>The following files were changed:<ol>
+        <li>/includes/modules/shipping/upsxml.php</li>
+    </ol></li>
+  </ul></li>
   <li>1.7.11, 2022-07-31 (lat9)<ul>
     <li>BUGFIX: Correct zc158 Fatal error; zen_get_zone_code now requires parameter #2 to be an int.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.10, 2022-05-17 (lat9)<ul>
     <li>BUGFIX: Correct PHP 8.0+ Fatal error; XMLParse class now included in PHP base.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/classes/xmldocument.php.</li>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/classes/xmldocument.php</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.9, 2020-07-29 (lat9)<ul>
     <li>BUGFIX: Time-in-transit missing if shipping-method name is translated.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/languages/english/modules/shipping/upsxml.php.</li>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/languages/english/modules/shipping/upsxml.php</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.8, 2020-06-29 (lat9)<ul>
     <li>BUGFIX: Shipping-method names couldn't be translated.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
     <li><b>Note:</b> This update appends the UPS <em>Service Code</em> to the names of the individually-selectable shipping methods. If you are <em>upgrading</em>, it's very, <em>very</em> important to go to your admin's <b><i>Modules-&gt;Shipping</i></b> for your existing configuration to be updated.  Otherwise, your customers won't receive UPS quotes.</li>
   </ul></li>
@@ -144,27 +150,27 @@ most necessary features offered by the UPS Rates and Services system. The module
     <li>BUGFIX: Correctly offer "Next Day Air Early", if configured and provided in the UPS quote.</li>
     <li>BUGFIX: Sort quotes returned in ascending cost order.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.6, 2019-09-29 (lat9)<ul>
     <li>BUGFIX: Correct insurance not recognized when using the shipping estimator.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.5, 2019-09-07 (lat9)<ul>
     <li>BUGFIX: Correctly use UPS-supplied messages, if present, on a quote error.</li>
     <li>BUGFIX: Restore 'MODULE_SHIPPING_UPSXML_RATES_ORIGIN' setting, "lost" in v1.7.4.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.4, 2019-08-24 (lat9)<ul>
     <li>BUGFIX: Remove unwanted directory-separator from UPS icon.</li>
     <li>BUGFIX: Remove single-quotes from numeric fields inserted on shipping-method installation.</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.3, 2019-06-26 (lat9, benharold)<ul>
@@ -175,14 +181,14 @@ most necessary features offered by the UPS Rates and Services system. The module
     <li>The following files were changed:<ol>
       <li>/includes/classes/xmldocument.php</li>
       <li>/includes/languages/english/modules/shipping/upsxml.php</li>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.2, 2018-01-22 (lat9)<ul>
     <li>BUGFIX: Don't issue the invalid "Currency Code" message until the module is installed and enabled.</li>
     <li>BUGFIX: Don't request negotiated rates if the ship-to state has not been set (i.e. when used by the shipping-estimator).</li>
     <li>The following files were changed:<ol>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7.1, 2017-10-08 (lat9)<ul>
@@ -190,7 +196,7 @@ most necessary features offered by the UPS Rates and Services system. The module
     <li>The following files were changed:<ol>
       <li>/includes/classes/xmldocument.php</li>
       <li>/includes/languages/english/modules/shipping/upsxml.php</li>
-      <li>/includes/modules/shipping/upsxml.php.</li>
+      <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
   </ul></li>
   <li>1.7, 2017-09-23 (lat9)<ul>

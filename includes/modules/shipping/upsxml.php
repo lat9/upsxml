@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.7.11
+ * UPS XML v1.8.0
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -43,10 +43,73 @@ class upsxml
         $code,
         $title,
         $description,
-        $icon, $enabled,
+        $icon,
+        $enabled,
+        $sort_order,
+        $quotes,
         $types;
-    public
-        $moduleVersion = '1.7.11';
+
+    protected
+        $_check,
+        $_upsProductCode,
+        $_upsOriginCity,
+        $_upsOriginStateProv,
+        $_upsOriginCountryCode,
+        $_upsOriginPostalCode,
+        $_upsDestCity,
+        $_upsDestStateProv,
+        $_upsDestCountryCode,
+        $_upsDestPostalCode,
+        $_upsActionCode,
+        $moduleVersion = '1.8.0-beta1',
+        $access_key,
+        $access_username,
+        $access_password,
+        $boxCount,
+        $currencyCode,
+        $customer_classification,
+        $debug,
+        $displayTransitTime,
+        $displayWeight,
+        $handling_fee,
+        $host,
+        $item_height,
+        $item_length,
+        $item_weight,
+        $item_width,
+        $items_qty,
+        $keys,
+        $logfile,
+        $numberServices,
+        $origin,
+        $origin_city,
+        $origin_country,
+        $origin_postalcode,
+        $origin_stateprov,
+        $package_type,
+        $package_types,
+        $path,
+        $pickup_method,
+        $pickup_methods,
+        $pkgvalue,
+        $port,
+        $protocol,
+        $quote_type,
+        $service_codes,
+        $servicesTimeintransit,
+        $tax_class,
+        $timeintransit,
+        $timeout,
+        $today,
+        $transitpath,
+        $transitversion,
+        $transitxpci_version,
+        $unit_length,
+        $unit_weight,
+        $upsShipperNumber,
+        $upsxml_value_mapping,
+        $version,
+        $xpci_version;
 
     //***************
     function __construct()
