@@ -34,9 +34,6 @@
 */
 require DIR_FS_CATALOG . 'includes/classes/xmldocument.php';
 
-// if using the optional dimensional support, set to 1, otherwise leave as 0 (no quotes!)
-define('DIMENSIONS_SUPPORTED', 0);
-
 class upsxml
 {
     public
@@ -129,12 +126,13 @@ class upsxml
             }
         }
 
-        $this->enabled = (defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && MODULE_SHIPPING_UPSXML_RATES_STATUS === 'True');
         $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : null;
         if ($this->sort_order === null) {
             return false;
         }
-        if ($this->enabled) {
+
+        $this->enabled = (MODULE_SHIPPING_UPSXML_RATES_STATUS === 'True');
+        if ($this->enabled === true) {
             $this->icon = DIR_WS_TEMPLATE . 'images/icons/shipping_ups.gif';
             $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
 
@@ -164,7 +162,7 @@ class upsxml
 
             $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
             $this->protocol = 'https';
-            $this->host = (defined('MODULE_SHIPPING_UPSXML_RATES_TEST_MODE') && (MODULE_SHIPPING_UPSXML_RATES_TEST_MODE === 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com');
+            $this->host = (MODULE_SHIPPING_UPSXML_RATES_MODE === 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com';
             $this->port = '443';
             $this->path = '/ups.app/xml/Rate';
             $this->transitpath = '/ups.app/xml/TimeInTransit';
@@ -253,7 +251,7 @@ class upsxml
         // Determine whether UPS shipping should be offered, based on the current order's
         // zone-id (storefront **only**).
         //
-        if (IS_ADMIN_FLAG === false && $this->enabled && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
+        if (IS_ADMIN_FLAG === false && $this->enabled === true && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
             $check = $db->Execute(
                 "SELECT zone_id 
                    FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
@@ -262,15 +260,14 @@ class upsxml
                   ORDER BY zone_id"
             );
             $check_flag = false;
-            while (!$check->EOF) {
-                if ($check->fields['zone_id'] < 1 || $check->fields['zone_id'] == $order->delivery['zone_id']) {
+            foreach ($check as $next_zone) {
+                if ($next_zone['zone_id'] < 1 || $next_zone['zone_id'] === $order->delivery['zone_id']) {
                     $check_flag = true;
                     break;
                 }
-                $check->MoveNext();
             }
 
-            if (!$check_flag) {
+            if ($check_flag === false) {
                 $this->enabled = false;
             }
         }
@@ -422,24 +419,11 @@ class upsxml
         $dest_postcode = (!empty($order->delivery['postcode'])) ? $order->delivery['postcode'] : '';
         $this->_upsDest($dest_city, $state, $order->delivery['country']['iso_code_2'], $dest_postcode);
 
-        if (DIMENSIONS_SUPPORTED === 1) {
-            $productsArray = $_SESSION['cart']->get_products();
-            // sort $productsArray according to ready-to-ship (first) and not-ready-to-ship (last)
-            usort($productsArray, ready_to_shipCmp);
-            // Use packing algorithm to return the number of boxes we'll ship
-            $boxesToShip = $this->packProducts($productsArray);
-            // Quote for the number of boxes
-            for ($i = 0; $i < count($boxesToShip); $i++) {
-                $this->_addItem($boxesToShip[$i]['length'], $boxesToShip[$i]['width'], $boxesToShip[$i]['height'], $boxesToShip[$i]['current_weight']);
-                $totalWeight += $boxesToShip[$i]['current_weight'];
-            }
-        } else {
-            // The old method. Let zen-cart tell us how many boxes, plus the weight of each (or total? - might be sw/num boxes)
-            $this->items_qty = 0; //reset quantities
-            for ($i = 0; $i < $shipping_num_boxes; $i++) {
-                $this->_addItem(0, 0, 0, $shipping_weight);
-            }
+        $this->items_qty = 0; //reset quantities
+        for ($i = 0; $i < $shipping_num_boxes; $i++) {
+            $this->_addItem(0, 0, 0, $shipping_weight);
         }
+
         if ($this->displayTransitTime) {
             // BOF Time In Transit:
             $this->servicesTimeintransit = $this->_upsGetTimeServices();
@@ -456,11 +440,7 @@ class upsxml
         if (is_array($upsQuote) && count($upsQuote) > 0) {
             $weight_info = '';
             if ($this->displayWeight) {
-                if (DIMENSIONS_SUPPORTED === 1) {
-                    $weight_info = ' (' . $this->boxCount . ($this->boxCount > 1 ? ' pkg(s), ' : ' pkg, ') . $totalWeight . ' ' . strtolower($this->unit_weight) . ' total)';
-                } else {
-                    $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight, 2) . ' ' . strtolower($this->unit_weight) . ' total)';
-                }
+                $weight_info = ' (' . $shipping_num_boxes . ($this->boxCount > 1 ? ' pkg(s) x ' : ' pkg x ') . number_format($shipping_weight, 2) . ' ' . strtolower($this->unit_weight) . ' total)';
             }
             $this->quotes = [
                 'id' => $this->code,
@@ -711,130 +691,6 @@ class upsxml
         $this->items_qty++;
     }
 
-    //********************
-    protected function getPackages()
-    {
-        global $db;
-
-        $packages = [];
-        $result = $db->Execute("SELECT * FROM " . TABLE_PACKAGING . " ORDER BY package_cost;");
-        while (!$result->EOF) {
-            $packages[] = [
-                'id' => $result->fields['package_id'],
-                'name' => $result->fields['package_name'],
-                'description' => $result->fields['package_description'],
-                'length' => $result->fields['package_length'],
-                'width' => $result->fields['package_width'],
-                'height' => $result->fields['package_height'],
-                'empty_weight' => $result->fields['package_empty_weight'],
-                'max_weight' => $result->fields['package_max_weight'],
-                'cost' => $result->fields['package_cost']
-            ];
-            $result->MoveNext();
-        }
-        return $packages;
-    }
-
-    //********************************
-    protected function packProducts($productsArray)
-    {
-        // A very simple box packing algorithm. Given a list of packages, returns an array of boxes.
-        // This algorithm is trivial. It works on the premise that you have selected boxes that fit your products, and that their volumes are resonable multiples
-        // of the products they store. For example, if you sell CDs and these CDs are 5x5x0.5", your boxes should be 5x5x0.5 (1 CD mailer), 5x5x2.5 (5 CD mailer)
-        // and 5x5x5 (10 CD mailer). No matter how many CDs a customer buys, this routine will always find the optimal packing.
-        // Your milage may differ, depending on what variety of products you sell, and how they're boxed. I just made up this algorithm in a hurry to fill a small
-        // niche. You are encouraged to find better algorithms. Better algorithms mean better packaging, resulting in higher quoting accuracy and less loss due to
-        // inaccurate quoting. The algorithm proceeds as follows:
-        // Get the first, smallest box, and try to put everything into it. If not all of it fits, try fitting it all into the next largest box. Keep increasing
-        // the size of the box until no larger box can be obtained, then spill over into a second, smallest box. Once again, increase the box size until
-        // everything fits, or spill over again. Repeat until everything is boxed. The cost of a box determines the order in which it is tried. There will definitely
-        // be cases where it is cheaper to send two small packages rather than one larger one. In that case, you'll need a better algorithm.
-        // Get the available packages and "prepare" empty boxes with weight and remaining volume counters. (Take existing box and add 'remaining_volume' and 'current_weight';
-        $definedPackages = $this->getPackages();
-        $emptyBoxesArray = [];
-        for ($i = 0, $n = count($definedPackages); $i < $n; $i++) {
-            $definedBox = $definedPackages[$i];
-            $definedBox['remaining_volume'] = $definedBox['length'] * $definedBox['width'] * $definedBox['height'];
-            $definedBox['current_weight'] = $definedBox['empty_weight'];
-            $emptyBoxesArray[] = $definedBox;
-        }
-        $packedBoxesArray = [];
-        $currentBox = null;
-        // Get the product array and expand multiple qty items.
-        $productsRemaining = [];
-        for ($i = 0, $n = count($productsArray); $i < $n; $i++) {
-            $product = $productsArray[$i];
-            for ($j = 0; $j < $productsArray[$i]['quantity']; $j++) {
-                $productsRemaining[] = $product;
-            }
-        }
-        // Worst case, you'll need as many boxes as products ordered.
-        while (count($productsRemaining)) {
-            // Immediately set aside products that are already packed and ready.
-            if ($productsRemaining[0]['ready_to_ship'] == '1') {
-                $packedBoxesArray[] = array (
-                'length' => $productsRemaining[0]['length'],
-                'width' => $productsRemaining[0]['width'],
-                'height' => $productsRemaining[0]['height'],
-                'current_weight' => $productsRemaining[0]['weight']);
-                $productsRemaining = array_slice($productsRemaining, 1);
-                continue;
-            }
-            //Cycle through boxes, increasing box size if all doesn't fit.
-            if (count($emptyBoxesArray) == 0) {
-                print_r("ERROR: No boxes to ship unpackaged product<br>");
-                break;
-            }
-            for ($b = 0, $c = count($emptyBoxesArray); $b < $c; $b++) {
-                $currentBox = $emptyBoxesArray[$b];
-                //Try to fit each product in box
-                for ($p = 0; $p < count($productsRemaining); $p++) {
-                    if ($this->fitsInBox($productsRemaining[$p], $currentBox)) {
-                        //It fits. Put it in the box.
-                        $currentBox = $this->putProductInBox($productsRemaining[$p], $currentBox);
-                        if ($p === count($productsRemaining) - 1) {
-                            $packedBoxesArray[] = $currentBox;
-                            $productsRemaining = array_slice($productsRemaining, $p + 1);
-                            break 2;
-                        }
-                    } else {
-                        if ($b === count($emptyBoxesArray) - 1) {
-                            //We're at the largest box already, and it's full. Keep what we've packed so far and get another box.
-                            $packedBoxesArray[] = $currentBox;
-                            $productsRemaining = array_slice($productsRemaining, $p + 1);
-                            break 2;
-                        }
-                        // Not all of them fit. Stop packing remaining products and try next box.
-                        break;
-                    }
-                }
-            }
-        }
-        return $packedBoxesArray;
-    }
-
-    //*****************************
-    protected function fitsInBox($product, $box)
-    {
-        $productVolume = $product['length'] * $product['width'] * $product['height'];
-        if ($productVolume <= $box['remaining_volume']) {
-            if ($box['max_weight'] == 0 || ($box['current_weight'] + $product['weight'] <= $box['max_weight'])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    //***********************************
-    protected function putProductInBox($product, $box)
-    {
-        $productVolume = $product['length'] * $product['width'] * $product['height'];
-        $box['remaining_volume'] -= $productVolume;
-        $box['products'][] = $product;
-        $box['current_weight'] += $product['weight'];
-        return $box;
-    }
-
     //*********************
     protected function _upsGetQuote()
     {
@@ -888,17 +744,6 @@ class upsxml
             "           <PackagingType>\n".
             "               <Code>". $this->package_types[$this->package_type] ."</Code>\n".
             "           </PackagingType>\n";
-            if (DIMENSIONS_SUPPORTED === 1) {
-                $ratingServiceSelectionRequestPackageContent .=
-                "           <Dimensions>\n".
-                "               <UnitOfMeasurement>\n".
-                "                   <Code>". $this->unit_length ."</Code>\n".
-                "               </UnitOfMeasurement>\n".
-                "               <Length>". $this->item_length[$i] ."</Length>\n".
-                "               <Width>". $this->item_width[$i] ."</Width>\n".
-                "               <Height>". $this->item_height[$i] ."</Height>\n".
-                "           </Dimensions>\n";
-            }
 
             $ratingServiceSelectionRequestPackageContent .=
             "           <PackageWeight>\n".
@@ -1179,13 +1024,4 @@ class upsxml
             error_log($message . PHP_EOL, 3, $this->logfile);
         }
     }
-}
-
-//******************************
-function ready_to_shipCmp($a, $b)
-{
-    if ($a['ready_to_ship'] === $b['ready_to_ship']) {
-        return 0;
-    }
-    return ($a['ready_to_ship'] > $b['ready_to_ship']) ? -1 : 1;
 }
