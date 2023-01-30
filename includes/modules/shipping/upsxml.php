@@ -44,6 +44,7 @@ class upsxml
         $enabled = false,
         $sort_order,
         $quotes,
+        $tax_class,
         $types;
 
     protected
@@ -58,7 +59,7 @@ class upsxml
         $_upsDestCountryCode,
         $_upsDestPostalCode,
         $_upsActionCode,
-        $moduleVersion = '1.8.0',
+        $moduleVersion = '1.8.1',
         $access_key,
         $access_username,
         $access_password,
@@ -91,7 +92,7 @@ class upsxml
         $quote_type,
         $service_codes,
         $servicesTimeintransit,
-        $tax_class,
+
         $timeintransit,
         $timeout,
         $today,
