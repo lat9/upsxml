@@ -58,7 +58,7 @@ class upsxml
         $_upsDestCountryCode,
         $_upsDestPostalCode,
         $_upsActionCode,
-        $moduleVersion = '1.8.0-beta1',
+        $moduleVersion = '1.8.0',
         $access_key,
         $access_username,
         $access_password,
