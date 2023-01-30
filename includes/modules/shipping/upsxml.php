@@ -41,7 +41,7 @@ class upsxml
         $title,
         $description,
         $icon,
-        $enabled,
+        $enabled = false,
         $sort_order,
         $quotes,
         $types;
@@ -70,10 +70,7 @@ class upsxml
         $displayWeight,
         $handling_fee,
         $host,
-        $item_height,
-        $item_length,
-        $item_weight,
-        $item_width,
+        $item_weight = [],
         $items_qty,
         $keys,
         $logfile,
@@ -109,22 +106,16 @@ class upsxml
         $xpci_version;
 
     //***************
-    function __construct()
+    public function __construct()
     {
-        global $db, $order;
+        global $current_page;
+
         $this->code = 'upsxml';
         $this->title = MODULE_SHIPPING_UPSXML_RATES_TEXT_TITLE;
         if (IS_ADMIN_FLAG === true) {
             $this->title .= ' v' . $this->moduleVersion;
         }
         $this->description = MODULE_SHIPPING_UPSXML_RATES_TEXT_DESCRIPTION;
-
-        if (IS_ADMIN_FLAG === true && defined('MODULE_SHIPPING_UPSXML_RATES_STATUS') && basename($GLOBALS['PHP_SELF'], '.php') === FILENAME_MODULES) {
-            $new_version_details = plugin_version_check_for_updates(126, $this->moduleVersion);
-            if ($new_version_details !== false) {
-                $this->title .= '<span class="alert">' . ' - NOTE: A NEW VERSION OF THIS PLUGIN IS AVAILABLE. <a href="' . $new_version_details['link'] . '" target="_blank">[Details]</a>' . '</span>';
-            }
-        }
 
         $this->sort_order = (defined('MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER')) ? (int)MODULE_SHIPPING_UPSXML_RATES_SORT_ORDER : null;
         if ($this->sort_order === null) {
@@ -133,9 +124,7 @@ class upsxml
 
         $this->enabled = (MODULE_SHIPPING_UPSXML_RATES_STATUS === 'True');
         if ($this->enabled === true) {
-            $this->icon = DIR_WS_TEMPLATE . 'images/icons/shipping_ups.gif';
             $this->tax_class = (int)MODULE_SHIPPING_UPSXML_RATES_TAX_CLASS;
-
             $this->access_key = MODULE_SHIPPING_UPSXML_RATES_ACCESS_KEY;
             $this->access_username = MODULE_SHIPPING_UPSXML_RATES_USERNAME;
             $this->access_password = MODULE_SHIPPING_UPSXML_RATES_PASSWORD;
@@ -153,124 +142,64 @@ class upsxml
             $this->upsShipperNumber = MODULE_SHIPPING_UPSXML_SHIPPER_NUMBER;
             $this->displayWeight = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'weight') !== false);
             $this->displayTransitTime = (strpos(MODULE_SHIPPING_UPSXML_OPTIONS, 'transit') !== false);
-
-            // -----
-            // Ensure that the currency code supplied is supported by the store, default to
-            // the store's default currency (with a warning log generated) if not.
-            //
-            $this->currencyCode = $this->initCurrencyCode();
-
             $this->customer_classification = MODULE_SHIPPING_UPSXML_RATES_CUSTOMER_CLASSIFICATION_CODE;
-            $this->protocol = 'https';
             $this->host = (MODULE_SHIPPING_UPSXML_RATES_MODE === 'Test') ? 'wwwcie.ups.com' : 'onlinetools.ups.com';
-            $this->port = '443';
-            $this->path = '/ups.app/xml/Rate';
-            $this->transitpath = '/ups.app/xml/TimeInTransit';
-            $this->version = 'UPSXML Rate 1.0001';
-            $this->transitversion = 'UPSXML Time In Transit 1.0002';
-            $this->timeout = '60';
-            $this->xpci_version = '1.0001';
-            $this->transitxpci_version = '1.0002';
-            $this->items_qty = 0;
-            $this->timeintransit = '0';
-            $this->today = date('Ymd');
-
-            // -----
-            // Since the time-in-transit and rate services use different codes to identify the
-            // associated shipping-method, but the same service-names, we'll include a table to
-            // provide that association.
-            //
-            $this->upsxml_value_mapping = [
-                'Next Day Air' => '01',
-                '2nd Day Air' => '02',
-                'Ground' => '03',
-                'Worldwide Express' => '07',
-                'Worldwide Expedited' => '08',
-                'Standard' => '11',
-                '3 Day Select' => '12',
-                'Next Day Air Saver' => '13',
-                'Next Day Air Early' => '14',
-                'Worldwide Express Plus' => '54',
-                '2nd Day Air A.M.' => '59',
-                'Worldwide Saver' => '65',
-            ];
-
-            // insurance addition
-            $this->pkgvalue = 0;
-            if (MODULE_SHIPPING_UPSXML_INSURE === 'True') {
-                if (isset($order->info['subtotal'])) {
-                    $this->pkgvalue = ceil($order->info['subtotal']);
-                } elseif (isset($_SESSION['cart']->total)) {
-                    $this->pkgvalue = ceil($_SESSION['cart']->total);
-                }
-            }
-            // end insurance addition
 
             $this->debug = (MODULE_SHIPPING_UPSXML_DEBUG === 'true');
             $this->logfile = DIR_FS_LOGS . '/upsxml-' . date('Ymd') . '.log';
+
+            $this->initializeUpsXmlVariables();
+
+            if (IS_ADMIN_FLAG === true) {
+                if ($current_page === 'modules.php') {
+                    $this->adminInitializationChecks();
+                }
+            } else {
+                $this->storefrontInitialization();
+            }
         }
+    }
+
+    protected function initializeUpsXmlVariables()
+    {
+        // -----
+        // Ensure that the currency code supplied is supported by the store, default to
+        // the store's default currency (with a warning log generated) if not.
+        //
+        $this->currencyCode = $this->initCurrencyCode();
+ 
+        $this->protocol = 'https';
+        $this->port = '443';
+        $this->path = '/ups.app/xml/Rate';
+        $this->transitpath = '/ups.app/xml/TimeInTransit';
+        $this->version = 'UPSXML Rate 1.0001';
+        $this->transitversion = 'UPSXML Time In Transit 1.0002';
+        $this->timeout = '60';
+        $this->xpci_version = '1.0001';
+        $this->transitxpci_version = '1.0002';
+        $this->items_qty = 0;
+        $this->timeintransit = '0';
+        $this->today = date('Ymd');
 
         // -----
-        // Provide various configuration fix-ups during admin configuration.
+        // Since the time-in-transit and rate services use different codes to identify the
+        // associated shipping-method, but the same service-names, we'll include a table to
+        // provide that association.
         //
-        if (IS_ADMIN_FLAG === true) {
-            // -----
-            // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
-            //
-            $db->Execute(
-                "UPDATE " . TABLE_CONFIGURATION . "
-                    SET configuration_value = REPLACE(configuration_value, 'Next Day Air Early A.M.', 'Next Day Air Early'),
-                        set_function = REPLACE(set_function, 'Next Day Air Early A.M.', 'Next Day Air Early')
-                  WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
-                  LIMIT 1"
-            );
-
-            // -----
-            // v1.7.8: The 'serviceCode' values are now parenthetically suffixed to their respective
-            // names, enabling multi-language configuration.
-            //
-            if (strpos(MODULE_SHIPPING_UPSXML_TYPES, '[') === false) {
-                $upsxml_types_configured = explode(',', str_replace(', ', ',', MODULE_SHIPPING_UPSXML_TYPES));
-                foreach ($upsxml_types_configured as &$upsxml_type) {
-                    $upsxml_type .= (isset($this->upsxml_value_mapping[$upsxml_type])) ? (' [' . $this->upsxml_value_mapping[$upsxml_type] . ']') : ' [???]';
-                }
-                unset($upsxml_type);
-                $upsxml_types = implode(', ', $upsxml_types_configured);
-                
-                $db->Execute(
-                    "UPDATE " . TABLE_CONFIGURATION . "
-                        SET configuration_value = '$upsxml_types',
-                            set_function = 'zen_cfg_select_multioption(array(\'Next Day Air [01]\', \'2nd Day Air [02]\', \'Ground [03]\', \'Worldwide Express [07]\', \'Worldwide Expedited [08]\', \'Standard [11]\', \'3 Day Select [12]\', \'Next Day Air Saver [13]\', \'Next Day Air Early [14]\', \'Worldwide Express Plus [54]\', \'2nd Day Air A.M. [59]\', \'Express Saver [65]\'), '
-                      WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
-                      LIMIT 1"
-                );
-            }
-        }
-
-        // -----
-        // Determine whether UPS shipping should be offered, based on the current order's
-        // zone-id (storefront **only**).
-        //
-        if (IS_ADMIN_FLAG === false && $this->enabled === true && ((int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0)) {
-            $check = $db->Execute(
-                "SELECT zone_id 
-                   FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
-                  WHERE geo_zone_id = " . (int)MODULE_SHIPPING_UPSXML_RATES_ZONE . "
-                    AND zone_country_id = " . (int)$order->delivery['country']['id'] . "
-                  ORDER BY zone_id"
-            );
-            $check_flag = false;
-            foreach ($check as $next_zone) {
-                if ($next_zone['zone_id'] < 1 || $next_zone['zone_id'] === $order->delivery['zone_id']) {
-                    $check_flag = true;
-                    break;
-                }
-            }
-
-            if ($check_flag === false) {
-                $this->enabled = false;
-            }
-        }
+        $this->upsxml_value_mapping = [
+            'Next Day Air' => '01',
+            '2nd Day Air' => '02',
+            'Ground' => '03',
+            'Worldwide Express' => '07',
+            'Worldwide Expedited' => '08',
+            'Standard' => '11',
+            '3 Day Select' => '12',
+            'Next Day Air Saver' => '13',
+            'Next Day Air Early' => '14',
+            'Worldwide Express Plus' => '54',
+            '2nd Day Air A.M.' => '59',
+            'Worldwide Saver' => '65',
+        ];
 
         // Available pickup types - set in admin
         $this->pickup_methods = [
@@ -365,8 +294,100 @@ class upsxml
                 '11' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_11,
                 '54' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_54,
                 '65' => MODULE_SHIPPING_UPSXML_SERVICE_CODE_OTHER_ORIGIN_65
-            ]
+            ],
         ];
+    }
+
+    protected function adminInitializationChecks()
+    {
+        global $db;
+
+        $new_version_details = plugin_version_check_for_updates(126, $this->moduleVersion);
+        if ($new_version_details !== false) {
+            $this->title .= '<span class="alert">' . ' - NOTE: A NEW VERSION OF THIS PLUGIN IS AVAILABLE. <a href="' . $new_version_details['link'] . '" target="_blank">[Details]</a>' . '</span>';
+        }
+
+        // -----
+        // Provide fix-up to change 'Next Day Air Early A.M.' to 'Next Day Air Early'.
+        //
+        $db->Execute(
+            "UPDATE " . TABLE_CONFIGURATION . "
+                SET configuration_value = REPLACE(configuration_value, 'Next Day Air Early A.M.', 'Next Day Air Early'),
+                    set_function = REPLACE(set_function, 'Next Day Air Early A.M.', 'Next Day Air Early')
+              WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
+              LIMIT 1"
+        );
+
+        // -----
+        // v1.7.8: The 'serviceCode' values are now parenthetically suffixed to their respective
+        // names, enabling multi-language configuration.
+        //
+        if (strpos(MODULE_SHIPPING_UPSXML_TYPES, '[') === false) {
+            $upsxml_types_configured = explode(',', str_replace(', ', ',', MODULE_SHIPPING_UPSXML_TYPES));
+            foreach ($upsxml_types_configured as &$upsxml_type) {
+                $upsxml_type .= (isset($this->upsxml_value_mapping[$upsxml_type])) ? (' [' . $this->upsxml_value_mapping[$upsxml_type] . ']') : ' [???]';
+            }
+            unset($upsxml_type);
+            $upsxml_types = implode(', ', $upsxml_types_configured);
+            
+            $db->Execute(
+                "UPDATE " . TABLE_CONFIGURATION . "
+                    SET configuration_value = '$upsxml_types',
+                        set_function = 'zen_cfg_select_multioption([\'Next Day Air [01]\', \'2nd Day Air [02]\', \'Ground [03]\', \'Worldwide Express [07]\', \'Worldwide Expedited [08]\', \'Standard [11]\', \'3 Day Select [12]\', \'Next Day Air Saver [13]\', \'Next Day Air Early [14]\', \'Worldwide Express Plus [54]\', \'2nd Day Air A.M. [59]\', \'Express Saver [65]\'], '
+                  WHERE configuration_key = 'MODULE_SHIPPING_UPSXML_TYPES'
+                  LIMIT 1"
+            );
+        }
+    }
+
+    protected function storefrontInitialization()
+    {
+        global $order, $template, $current_page_base;
+
+        $this->icon = $template->get_template_dir('shipping_usps.gif', DIR_WS_TEMPLATE, $current_page_base, 'images/icons') . '/shipping_ups.gif';
+
+        // insurance addition
+        $this->pkgvalue = 0;
+        if (MODULE_SHIPPING_UPSXML_INSURE === 'True') {
+            if (isset($order->info['subtotal'])) {
+                $this->pkgvalue = ceil($order->info['subtotal']);
+            } elseif (isset($_SESSION['cart']->total)) {
+                $this->pkgvalue = ceil($_SESSION['cart']->total);
+            }
+        }
+        // end insurance addition
+
+        $this->update_status();
+    }
+
+    public function update_status()
+    {
+        global $order, $db;
+
+        // -----
+        // Determine whether UPS shipping should be offered, based on the current order's
+        // zone-id (storefront **only**).
+        //
+        if ($this->enabled === true && isset($order) && (int)MODULE_SHIPPING_UPSXML_RATES_ZONE > 0) {
+            $check = $db->Execute(
+                "SELECT zone_id 
+                   FROM " . TABLE_ZONES_TO_GEO_ZONES . " 
+                  WHERE geo_zone_id = " . (int)MODULE_SHIPPING_UPSXML_RATES_ZONE . "
+                    AND zone_country_id = " . (int)$order->delivery['country']['id'] . "
+                  ORDER BY zone_id"
+            );
+            $check_flag = false;
+            foreach ($check as $next_zone) {
+                if ($next_zone['zone_id'] < 1 || $next_zone['zone_id'] === $order->delivery['zone_id']) {
+                    $check_flag = true;
+                    break;
+                }
+            }
+
+            if ($check_flag === false) {
+                $this->enabled = false;
+            }
+        }
     }
 
     // ----
@@ -421,7 +442,7 @@ class upsxml
 
         $this->items_qty = 0; //reset quantities
         for ($i = 0; $i < $shipping_num_boxes; $i++) {
-            $this->_addItem(0, 0, 0, $shipping_weight);
+            $this->_addItem($shipping_weight);
         }
 
         if ($this->displayTransitTime) {
@@ -675,7 +696,7 @@ class upsxml
     }
 
     //********************************************
-    protected function _addItem($length, $width, $height, $weight)
+    protected function _addItem($weight)
     {
         // Add box or item to shipment list. Round weights to 1 decimal places.
         if ((float)$weight < 1.0) {
@@ -683,11 +704,7 @@ class upsxml
         } else {
             $weight = round($weight, 1);
         }
-        $index = $this->items_qty;
-        $this->item_length[$index] = ($length ? (string)$length : '0' );
-        $this->item_width[$index] = ($width ? (string)$width : '0' );
-        $this->item_height[$index] = ($height ? (string)$height : '0' );
-        $this->item_weight[$index] = ($weight ? (string)$weight : '0' );
+        $this->item_weight[] = !empty($weight) ? (string)$weight : '0';
         $this->items_qty++;
     }
 
@@ -696,91 +713,83 @@ class upsxml
     {
         // Create the access request
         $accessRequestHeader =
-        "<?xml version=\"1.0\"?>\n".
-        "<AccessRequest xml:lang=\"en-US\">\n".
-        "   <AccessLicenseNumber>". $this->access_key ."</AccessLicenseNumber>\n".
-        "   <UserId>". $this->access_username ."</UserId>\n".
-        "   <Password>". $this->access_password ."</Password>\n".
-        "</AccessRequest>\n";
+            "<?xml version=\"1.0\"?>\n".
+            "<AccessRequest xml:lang=\"en-US\">\n".
+            "   <AccessLicenseNumber>". $this->access_key ."</AccessLicenseNumber>\n".
+            "   <UserId>". $this->access_username ."</UserId>\n".
+            "   <Password>". $this->access_password ."</Password>\n".
+            "</AccessRequest>\n";
 
         $ratingServiceSelectionRequestHeader =
-        "<?xml version=\"1.0\"?>\n".
-        "<RatingServiceSelectionRequest xml:lang=\"en-US\">\n".
-        "   <Request>\n".
-        "       <TransactionReference>\n".
-        "           <CustomerContext>Rating and Service</CustomerContext>\n".
-        "           <XpciVersion>". $this->xpci_version ."</XpciVersion>\n".
-        "       </TransactionReference>\n".
-        "       <RequestAction>Rate</RequestAction>\n".
-        "       <RequestOption>shop</RequestOption>\n".
-        "   </Request>\n".
-        "   <PickupType>\n".
-        "       <Code>". $this->pickup_methods[$this->pickup_method] ."</Code>\n".
-        "   </PickupType>\n".
-        "   <Shipment>\n".
-        (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<RateInformation><NegotiatedRatesIndicator /></RateInformation>' . PHP_EOL)) .
-        "       <Shipper>\n".
-        "           <Address>\n".
-        "               <City>". $this->_upsOriginCity ."</City>\n".
-        "               <StateProvinceCode>". $this->_upsOriginStateProv ."</StateProvinceCode>\n".
-        "               <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
-        "               <PostalCode>". $this->_upsOriginPostalCode ."</PostalCode>\n".
-        "           </Address>\n".
-        (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<ShipperNumber>' . $this->upsShipperNumber . '</ShipperNumber>' . PHP_EOL)) .
-        "       </Shipper>\n".
-        "       <ShipTo>\n".
-        "           <Address>\n".
-        "               <City>". $this->_upsDestCity ."</City>\n".
-        "               <StateProvinceCode>". $this->_upsDestStateProv ."</StateProvinceCode>\n".
-        "               <CountryCode>". $this->_upsDestCountryCode ."</CountryCode>\n".
-        "               <PostalCode>". $this->_upsDestPostalCode ."</PostalCode>\n".
-        ($this->quote_type == "Residential" ? "<ResidentialAddressIndicator/>\n" : "") .
-        "           </Address>\n".
-        "       </ShipTo>\n";
+            "<?xml version=\"1.0\"?>\n".
+            "<RatingServiceSelectionRequest xml:lang=\"en-US\">\n".
+            "   <Request>\n".
+            "       <TransactionReference>\n".
+            "           <CustomerContext>Rating and Service</CustomerContext>\n".
+            "           <XpciVersion>". $this->xpci_version ."</XpciVersion>\n".
+            "       </TransactionReference>\n".
+            "       <RequestAction>Rate</RequestAction>\n".
+            "       <RequestOption>shop</RequestOption>\n".
+            "   </Request>\n".
+            "   <PickupType>\n".
+            "       <Code>". $this->pickup_methods[$this->pickup_method] ."</Code>\n".
+            "   </PickupType>\n".
+            "   <Shipment>\n".
+            (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<RateInformation><NegotiatedRatesIndicator /></RateInformation>' . PHP_EOL)) .
+            "       <Shipper>\n".
+            "           <Address>\n".
+            "               <City>". $this->_upsOriginCity ."</City>\n".
+            "               <StateProvinceCode>". $this->_upsOriginStateProv ."</StateProvinceCode>\n".
+            "               <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
+            "               <PostalCode>". $this->_upsOriginPostalCode ."</PostalCode>\n".
+            "           </Address>\n".
+            (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<ShipperNumber>' . $this->upsShipperNumber . '</ShipperNumber>' . PHP_EOL)) .
+            "       </Shipper>\n".
+            "       <ShipTo>\n".
+            "           <Address>\n".
+            "               <City>". $this->_upsDestCity ."</City>\n".
+            "               <StateProvinceCode>". $this->_upsDestStateProv ."</StateProvinceCode>\n".
+            "               <CountryCode>". $this->_upsDestCountryCode ."</CountryCode>\n".
+            "               <PostalCode>". $this->_upsDestPostalCode ."</PostalCode>\n".
+            ($this->quote_type == "Residential" ? "<ResidentialAddressIndicator/>\n" : "") .
+            "           </Address>\n".
+            "       </ShipTo>\n";
 
         for ($i = 0, $ratingServiceSelectionRequestPackageContent = ''; $i < $this->items_qty; $i++) {
             $ratingServiceSelectionRequestPackageContent .=
-            "       <Package>\n".
-            "           <PackagingType>\n".
-            "               <Code>". $this->package_types[$this->package_type] ."</Code>\n".
-            "           </PackagingType>\n";
+                "       <Package>\n".
+                "           <PackagingType>\n".
+                "               <Code>". $this->package_types[$this->package_type] ."</Code>\n".
+                "           </PackagingType>\n";
 
             $ratingServiceSelectionRequestPackageContent .=
-            "           <PackageWeight>\n".
-            "               <UnitOfMeasurement>\n".
-            "                   <Code>". $this->unit_weight ."</Code>\n".
-            "               </UnitOfMeasurement>\n".
-            "               <Weight>". $this->item_weight[$i] ."</Weight>\n".
-            "           </PackageWeight>\n".
-            "           <PackageServiceOptions>\n".
-            //"               <COD>\n".
-            //"                   <CODFundsCode>0</CODFundsCode>\n".
-            //"                   <CODCode>3</CODCode>\n".
-            //"                   <CODAmount>\n".
-            //"                       <CurrencyCode>USD</CurrencyCode>\n".
-            //"                       <MonetaryValue>1000</MonetaryValue>\n".
-            //"                   </CODAmount>\n".
-            //"               </COD>\n".
-            "               <InsuredValue>\n".
-            "                   <CurrencyCode>" . $this->currencyCode . "</CurrencyCode>\n".
-            "                   <MonetaryValue>".$this->pkgvalue."</MonetaryValue>\n".
-            "               </InsuredValue>\n".
-            "           </PackageServiceOptions>\n".
-            "       </Package>\n";
+                "           <PackageWeight>\n".
+                "               <UnitOfMeasurement>\n".
+                "                   <Code>". $this->unit_weight ."</Code>\n".
+                "               </UnitOfMeasurement>\n".
+                "               <Weight>". $this->item_weight[$i] ."</Weight>\n".
+                "           </PackageWeight>\n".
+                "           <PackageServiceOptions>\n".
+                "               <InsuredValue>\n".
+                "                   <CurrencyCode>" . $this->currencyCode . "</CurrencyCode>\n".
+                "                   <MonetaryValue>".$this->pkgvalue."</MonetaryValue>\n".
+                "               </InsuredValue>\n".
+                "           </PackageServiceOptions>\n".
+                "       </Package>\n";
         }
 
         $ratingServiceSelectionRequestFooter =
-        //"   <ShipmentServiceOptions/>\n".
-        "   </Shipment>\n".
-        "   <CustomerClassification>\n".
-        "       <Code>". $this->customer_classification ."</Code>\n".
-        "   </CustomerClassification>\n".
-        "</RatingServiceSelectionRequest>\n";
+            "   </Shipment>\n".
+            "   <CustomerClassification>\n".
+            "       <Code>". $this->customer_classification ."</Code>\n".
+            "   </CustomerClassification>\n".
+            "</RatingServiceSelectionRequest>\n";
 
-        $xmlRequest = $accessRequestHeader .
-        $ratingServiceSelectionRequestHeader .
-        $ratingServiceSelectionRequestPackageContent .
-        $ratingServiceSelectionRequestFooter;
+        $xmlRequest =
+            $accessRequestHeader .
+            $ratingServiceSelectionRequestHeader .
+            $ratingServiceSelectionRequestPackageContent .
+            $ratingServiceSelectionRequestFooter;
 
         //post request $strXML;
         $xmlResult = $this->_post($this->protocol, $this->host, $this->port, $this->path, $this->version, $this->timeout, $xmlRequest);
@@ -794,34 +803,38 @@ class upsxml
         $this->debugLog("Date and Time: " . date('Y-m-d H:i:s') . PHP_EOL . "UPS URL: $url", true);
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlRequest);
-        curl_setopt($ch, CURLOPT_TIMEOUT, (int)$timeout);
+        $curl_options = [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_HEADER => 0,
+            CURLOPT_POST => 1,
+            CURLOPT_POSTFIELDS => $xmlRequest,
+            CURLOPT_TIMEOUT => (int)$timeout,
+        ];
+        curl_setopt_array($ch, $curl_options);
+
         $this->debugLog("UPS Request: $xmlRequest");
 
         $xmlResponse = curl_exec($ch);
-        if (curl_errno($ch)) {
-            $error_from_curl = sprintf('Error [%d]: %s', curl_errno($ch), curl_error($ch));
-            $this->debugLog("Error from cURL: $error_from_curl");
+        if (curl_errno($ch) !== 0) {
+            $this->debugLog('Error from cURL: ' . sprintf('Error [%d]: %s', curl_errno($ch), curl_error($ch)));
         }
         $this->debugLog("UPS RESPONSE: $xmlResponse");
         curl_close ($ch);
 
-        if (!$xmlResponse)  {
-            $xmlResponse = "<?xml version=\"1.0\"?>\n".
-            "<RatingServiceSelectionResponse>\n".
-            "   <Response>\n".
-            "       <TransactionReference>\n".
-            "           <CustomerContext>Rating and Service</CustomerContext>\n".
-            "           <XpciVersion>1.0001</XpciVersion>\n".
-            "       </TransactionReference>\n".
-            "       <ResponseStatusCode>0</ResponseStatusCode>\n".
-            "       <ResponseStatusDescription>". MODULE_SHIPPING_UPSXML_RATES_TEXT_COMM_UNKNOWN_ERROR ."</ResponseStatusDescription>\n".
-            "   </Response>\n".
-            "</RatingServiceSelectionResponse>\n";
+        if ($xmlResponse === false) {
+            $xmlResponse =
+                "<?xml version=\"1.0\"?>\n".
+                "<RatingServiceSelectionResponse>\n".
+                "   <Response>\n".
+                "       <TransactionReference>\n".
+                "           <CustomerContext>Rating and Service</CustomerContext>\n".
+                "           <XpciVersion>1.0001</XpciVersion>\n".
+                "       </TransactionReference>\n".
+                "       <ResponseStatusCode>0</ResponseStatusCode>\n".
+                "       <ResponseStatusDescription>". MODULE_SHIPPING_UPSXML_RATES_TEXT_COMM_UNKNOWN_ERROR ."</ResponseStatusDescription>\n".
+                "   </Response>\n".
+                "</RatingServiceSelectionResponse>\n";
         }
         return $xmlResponse;
     }
@@ -896,55 +909,54 @@ class upsxml
 
         // Create the access request
         $accessRequestHeader =
-        "<?xml version=\"1.0\"?>\n".
-        "<AccessRequest xml:lang=\"en-US\">\n".
-        "   <AccessLicenseNumber>". $this->access_key ."</AccessLicenseNumber>\n".
-        "   <UserId>". $this->access_username ."</UserId>\n".
-        "   <Password>". $this->access_password ."</Password>\n".
-        "</AccessRequest>\n";
+            "<?xml version=\"1.0\"?>\n".
+            "<AccessRequest xml:lang=\"en-US\">\n".
+            "   <AccessLicenseNumber>". $this->access_key ."</AccessLicenseNumber>\n".
+            "   <UserId>". $this->access_username ."</UserId>\n".
+            "   <Password>". $this->access_password ."</Password>\n".
+            "</AccessRequest>\n";
 
         $timeintransitSelectionRequestHeader =
-        "<?xml version=\"1.0\"?>\n".
-        "<TimeInTransitRequest xml:lang=\"en-US\">\n".
-        "   <Request>\n".
-        "       <TransactionReference>\n".
-        "           <CustomerContext>Time in Transit</CustomerContext>\n".
-        "           <XpciVersion>". $this->transitxpci_version ."</XpciVersion>\n".
-        "       </TransactionReference>\n".
-        "       <RequestAction>TimeInTransit</RequestAction>\n".
-        "   </Request>\n".
-        "   <TransitFrom>\n".
-        "       <AddressArtifactFormat>\n".
-        "           <PoliticalDivision2>". $this->origin_city ."</PoliticalDivision2>\n".
-        "           <PoliticalDivision1>". $this->origin_stateprov ."</PoliticalDivision1>\n".
-        "           <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
-        "           <PostcodePrimaryLow>". $this->origin_postalcode ."</PostcodePrimaryLow>\n".
-        "       </AddressArtifactFormat>\n".
-        "   </TransitFrom>\n".
-        "   <TransitTo>\n".
-        "       <AddressArtifactFormat>\n".
-        "           <PoliticalDivision2>". $this->_upsDestCity ."</PoliticalDivision2>\n".
-        "           <PoliticalDivision1>". $this->_upsDestStateProv ."</PoliticalDivision1>\n".
-        "           <CountryCode>". $this->_upsDestCountryCode ."</CountryCode>\n".
-        "           <PostcodePrimaryLow>". $this->_upsDestPostalCode ."</PostcodePrimaryLow>\n".
-        "           <PostcodePrimaryHigh>". $this->_upsDestPostalCode ."</PostcodePrimaryHigh>\n".
-        "       </AddressArtifactFormat>\n".
-        "   </TransitTo>\n".
-        "   <PickupDate>" . $shipdate . "</PickupDate>\n".
-        "   <ShipmentWeight>\n".
-        "       <UnitOfMeasurement>\n".
-        "           <Code>" . $this->unit_weight . "</Code>\n".
-        "       </UnitOfMeasurement>\n".
-        "       <Weight>10</Weight>\n".
-        "   </ShipmentWeight>\n".
-        "   <InvoiceLineTotal>\n".
-        "       <CurrencyCode>USD</CurrencyCode>\n".
-        "       <MonetaryValue>100</MonetaryValue>\n".
-        "   </InvoiceLineTotal>\n".
-        "</TimeInTransitRequest>\n";
+            "<?xml version=\"1.0\"?>\n".
+            "<TimeInTransitRequest xml:lang=\"en-US\">\n".
+            "   <Request>\n".
+            "       <TransactionReference>\n".
+            "           <CustomerContext>Time in Transit</CustomerContext>\n".
+            "           <XpciVersion>". $this->transitxpci_version ."</XpciVersion>\n".
+            "       </TransactionReference>\n".
+            "       <RequestAction>TimeInTransit</RequestAction>\n".
+            "   </Request>\n".
+            "   <TransitFrom>\n".
+            "       <AddressArtifactFormat>\n".
+            "           <PoliticalDivision2>". $this->origin_city ."</PoliticalDivision2>\n".
+            "           <PoliticalDivision1>". $this->origin_stateprov ."</PoliticalDivision1>\n".
+            "           <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
+            "           <PostcodePrimaryLow>". $this->origin_postalcode ."</PostcodePrimaryLow>\n".
+            "       </AddressArtifactFormat>\n".
+            "   </TransitFrom>\n".
+            "   <TransitTo>\n".
+            "       <AddressArtifactFormat>\n".
+            "           <PoliticalDivision2>". $this->_upsDestCity ."</PoliticalDivision2>\n".
+            "           <PoliticalDivision1>". $this->_upsDestStateProv ."</PoliticalDivision1>\n".
+            "           <CountryCode>". $this->_upsDestCountryCode ."</CountryCode>\n".
+            "           <PostcodePrimaryLow>". $this->_upsDestPostalCode ."</PostcodePrimaryLow>\n".
+            "           <PostcodePrimaryHigh>". $this->_upsDestPostalCode ."</PostcodePrimaryHigh>\n".
+            "       </AddressArtifactFormat>\n".
+            "   </TransitTo>\n".
+            "   <PickupDate>" . $shipdate . "</PickupDate>\n".
+            "   <ShipmentWeight>\n".
+            "       <UnitOfMeasurement>\n".
+            "           <Code>" . $this->unit_weight . "</Code>\n".
+            "       </UnitOfMeasurement>\n".
+            "       <Weight>10</Weight>\n".
+            "   </ShipmentWeight>\n".
+            "   <InvoiceLineTotal>\n".
+            "       <CurrencyCode>USD</CurrencyCode>\n".
+            "       <MonetaryValue>100</MonetaryValue>\n".
+            "   </InvoiceLineTotal>\n".
+            "</TimeInTransitRequest>\n";
 
-        $xmlTransitRequest = $accessRequestHeader .
-        $timeintransitSelectionRequestHeader;
+        $xmlTransitRequest = $accessRequestHeader . $timeintransitSelectionRequestHeader;
 
         //post request $strXML;
         $xmlTransitResult = $this->_post($this->protocol, $this->host, $this->port, $this->transitpath, $this->transitversion, $this->timeout, $xmlTransitRequest);
@@ -957,36 +969,37 @@ class upsxml
 
     protected function _transitparseResult($xmlTransitResult)
     {
-       $transitTime = [];
-       // Parse XML message returned by the UPS post server.
-       $doc = new upsXMLDocument();
-       $xp = new upsXMLParser();
-       $xp->setDocument($doc);
-       $xp->parse($xmlTransitResult);
-       $doc = $xp->getDocument();
-       // Get version. Must be xpci version 1.0001 or this might not work.
-       $responseVersion = $doc->getValueByPath('TimeInTransitResponse/Response/TransactionReference/XpciVersion');
-       if ($this->transitxpci_version != $responseVersion) {
-           $message = MODULE_SHIPPING_UPSXML_RATES_TEXT_COMM_VERSION_ERROR;
-           return $message;
-       }
-       // Get response code. 1 = SUCCESS, 0 = FAIL
-       $responseStatusCode = $doc->getValueByPath('TimeInTransitResponse/Response/ResponseStatusCode');
-       if ($responseStatusCode != '1') {
-           $errorMsg = $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorCode');
-           $errorMsg .= ': ';
-           $errorMsg .= $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorDescription');
-           return $errorMsg;
-       }
-       $root = $doc->getRoot();
-       $rootChildren = $root->getChildren();
-       for ($r = 0, $c = count($rootChildren); $r < $c; $r++) {
-           $elementName = $rootChildren[$r]->getName();
-           if ($elementName == 'TransitResponse') {
-               $transitResponse = $root->getElementsByName('TransitResponse');
-               $serviceSummary = $transitResponse['0']->getElementsByName('ServiceSummary');
-               $this->numberServices = count($serviceSummary);
-               for ($s = 0; $s < $this->numberServices; $s++) {
+        $transitTime = [];
+        // Parse XML message returned by the UPS post server.
+        $doc = new upsXMLDocument();
+        $xp = new upsXMLParser();
+        $xp->setDocument($doc);
+        $xp->parse($xmlTransitResult);
+        $doc = $xp->getDocument();
+        // Get version. Must be xpci version 1.0001 or this might not work.
+        $responseVersion = $doc->getValueByPath('TimeInTransitResponse/Response/TransactionReference/XpciVersion');
+        if ($this->transitxpci_version != $responseVersion) {
+            $message = MODULE_SHIPPING_UPSXML_RATES_TEXT_COMM_VERSION_ERROR;
+            return $message;
+        }
+        // Get response code. 1 = SUCCESS, 0 = FAIL
+        $responseStatusCode = $doc->getValueByPath('TimeInTransitResponse/Response/ResponseStatusCode');
+        if ($responseStatusCode != '1') {
+            $errorMsg = $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorCode');
+            $errorMsg .= ': ';
+            $errorMsg .= $doc->getValueByPath('TimeInTransitResponse/Response/Error/ErrorDescription');
+
+            return $errorMsg;
+        }
+        $root = $doc->getRoot();
+        $rootChildren = $root->getChildren();
+        for ($r = 0, $c = count($rootChildren); $r < $c; $r++) {
+            $elementName = $rootChildren[$r]->getName();
+            if ($elementName == 'TransitResponse') {
+                $transitResponse = $root->getElementsByName('TransitResponse');
+                $serviceSummary = $transitResponse['0']->getElementsByName('ServiceSummary');
+                $this->numberServices = count($serviceSummary);
+                for ($s = 0; $s < $this->numberServices; $s++) {
                     // index by Desc because that's all we can relate back to the service with
                     // (though it can probably return the code as well..)
                     $serviceDesc = str_replace('UPS ', '', $serviceSummary[$s]->getValueByPath('Service/Description'));
@@ -1017,8 +1030,8 @@ class upsxml
 
     protected function debugLog($message, $include_spacer = false)
     {
-        if ($this->debug) {
-            if ($include_spacer) {
+        if ($this->debug === true) {
+            if ($include_spacer === true) {
                 $message = "------------------------------------------\n" . $message;
             }
             error_log($message . PHP_EOL, 3, $this->logfile);
