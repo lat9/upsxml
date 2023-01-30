@@ -364,6 +364,11 @@ class upsxml
     {
         global $order, $db;
 
+        // disable only when entire cart is free shipping
+        if (!zen_get_shipping_enabled($this->code)) {
+            $this->enabled = false;
+        }
+
         // -----
         // Determine whether UPS shipping should be offered, based on the current order's
         // zone-id (storefront **only**).
