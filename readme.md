@@ -1,4 +1,4 @@
-# UPS/XML Shipping Module for Zen Cart 1.5.7 and later (v1.8.0)
+# UPS/XML Shipping Module for Zen Cart 1.5.7 and later (v1.8.1)
 
 This shipping method provides UPS shipping quotes using the UPS XML Rating Package API for Zen Cart versions 1.5.7 and later.
 
