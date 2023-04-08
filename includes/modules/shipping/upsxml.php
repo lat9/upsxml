@@ -741,7 +741,7 @@ class upsxml
             "       <Code>". $this->pickup_methods[$this->pickup_method] ."</Code>\n".
             "   </PickupType>\n".
             "   <Shipment>\n".
-            (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<RateInformation><NegotiatedRatesIndicator /></RateInformation>' . PHP_EOL)) .
+            (($this->upsShipperNumber == '') ? '' : ('<RateInformation><NegotiatedRatesIndicator /></RateInformation>' . PHP_EOL)) .
             "       <Shipper>\n".
             "           <Address>\n".
             "               <City>". $this->_upsOriginCity ."</City>\n".
@@ -749,7 +749,7 @@ class upsxml
             "               <CountryCode>". $this->_upsOriginCountryCode ."</CountryCode>\n".
             "               <PostalCode>". $this->_upsOriginPostalCode ."</PostalCode>\n".
             "           </Address>\n".
-            (($this->upsShipperNumber == '' || $this->_upsDestStateProv == '') ? '' : ('<ShipperNumber>' . $this->upsShipperNumber . '</ShipperNumber>' . PHP_EOL)) .
+            (($this->upsShipperNumber == '' ) ? '' : ('<ShipperNumber>' . $this->upsShipperNumber . '</ShipperNumber>' . PHP_EOL)) .
             "       </Shipper>\n".
             "       <ShipTo>\n".
             "           <Address>\n".
