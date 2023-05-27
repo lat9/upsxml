@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.8.0
+ * UPS XML v1.8.2
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -384,7 +384,7 @@ class upsxml
             );
             $check_flag = false;
             foreach ($check as $next_zone) {
-                if ($next_zone['zone_id'] < 1 || $next_zone['zone_id'] === $order->delivery['zone_id']) {
+                if ($next_zone['zone_id'] < 1 || (int)$next_zone['zone_id'] === (int)$order->delivery['zone_id']) {
                     $check_flag = true;
                     break;
                 }
