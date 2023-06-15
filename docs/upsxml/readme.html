@@ -25,7 +25,7 @@ img { margin-left: 20px; max-width: 95%; }
 
 <body>
 <h1>UPSXML Shipping Module for Zen Cart 1.5.7 and later</h1>
-<h3>Version 1.8.2, by lat9</h3>
+<h3>Version 1.8.3, by lat9 and proseLA</h3>
 <p>Current Support Thread at Zen Cart Forums: <a href="https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread" target="_blank">https://www.zen-cart.com/showthread.php?222903-UPS-XML-Support-Thread</a></p>
 
 <h4>Contributers and Copyrights</h4>
@@ -111,16 +111,24 @@ most necessary features offered by the UPS Rates and Services system. The module
 <hr />
 <h2>Version History</h2>
 <ul>
+  <li>1.8.3, 2023-06-15 (lat9/proseLA)<ul>
+    <li>BUGFIX: Correct formatting of UPS Response XML, making it readable.</li>
+    <li>The following files were changed:<ol>
+        <li>/includes/modules/shipping/upsxml.php</li>
+    </ol></li>
+  </ul></li>
   <li>1.8.2, 2023-05-27 (lat9)<ul>
     <li>BUGFIX: Correct shipping module not shown on shipping estimator, due to value type-mismatches.</li>
     <li>The following files were changed:<ol>
         <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
+  </ul></li>
   <li>1.8.1, 2023-01-30 (lat9)<ul>
     <li>BUGFIX: <code>tax_class</code> must be public, not protected.  Causing OPC errors.</li>
     <li>The following files were changed:<ol>
         <li>/includes/modules/shipping/upsxml.php</li>
     </ol></li>
+  </ul></li>
   <li>1.8.0, 2023-01-30 (lat9)<ul>
     <li>INTROP: Define all class variables for interoperation with PHP 8.2 and later.</li>
     <li>CHANGE: Remove (unsupported) processing for dimensional shipping.</li>

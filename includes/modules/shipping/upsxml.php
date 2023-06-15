@@ -1,6 +1,6 @@
 <?php
 /**
- * UPS XML v1.8.2
+ * UPS XML v1.8.3
 +------------------------------------------------------------------------------+
 | Original $Id: upsxml.php,v 1.1.4 2004/12/19 13:30:00 sgo Exp $               |
 | Written by Torin Walker                                                      |
@@ -825,7 +825,13 @@ class upsxml
         if (curl_errno($ch) !== 0) {
             $this->debugLog('Error from cURL: ' . sprintf('Error [%d]: %s', curl_errno($ch), curl_error($ch)));
         }
-        $this->debugLog("UPS RESPONSE: $xmlResponse");
+        $doc = new DomDocument('1.0');
+        $doc->preserveWhiteSpace = false;
+        $doc->formatOutput = true;
+        $doc->loadXML($xmlResponse);
+        $xml_string = $doc->saveXML();
+        $this->debugLog("UPS RESPONSE: $xml_string");
+
         curl_close ($ch);
 
         if ($xmlResponse === false) {
